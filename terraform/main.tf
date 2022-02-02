@@ -5,6 +5,10 @@ terraform {
       version = "~> 3.74"
 
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1.0"
+    }
   }
 }
 
@@ -13,10 +17,17 @@ provider "aws" {
   region  = var.aws_region
 }
 
+// Random to create a random bucket name
+
+resource "random_pet" "lambda_bucket_name" {
+  prefix = var.bucket_name
+  length = 4
+}
+
 // Bucket with Lambda Source Code in it
 
 resource "aws_s3_bucket" "lambda_bucket" {
-  bucket        = var.bucket_name
+  bucket        = random_pet.lambda_bucket_name.id
   acl           = "private"
   force_destroy = true
 }
