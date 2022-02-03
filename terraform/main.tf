@@ -32,38 +32,48 @@ resource "aws_s3_bucket" "lambda_bucket" {
   force_destroy = true
 }
 
-data "archive_file" "lambda_hello_world" {
+data "archive_file" "lambda_fusion_manager" {
   type = "zip"
 
-  source_dir  = "${path.module}/../functions/hello-world"
-  output_path = "${path.module}/../functions/hello-world.zip"
+  source_dir  = "${path.module}/../function"
+  output_path = "${path.module}/../function.zip"
 }
 
-resource "aws_s3_bucket_object" "lambda_hello_world" {
+resource "aws_s3_bucket_object" "lambda_fusion_manager" {
   bucket = aws_s3_bucket.lambda_bucket.id
-  key    = "hello-world.zip"
-  source = data.archive_file.lambda_hello_world.output_path
-  etag   = filemd5(data.archive_file.lambda_hello_world.output_path)
+  key    = "function.zip"
+  source = data.archive_file.lambda_fusion_manager.output_path
+  etag   = filemd5(data.archive_file.lambda_fusion_manager.output_path)
 }
 
 // Lambda Function
 
 resource "aws_lambda_function" "hello_world" {
-  function_name = "HelloWorld"
+  for_each      = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  function_name = "fusion-function-${each.value}"
 
   s3_bucket = aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_bucket_object.lambda_hello_world.key
+  s3_key    = aws_s3_bucket_object.lambda_fusion_manager.key
 
-  runtime = "nodejs12.x"
-  handler = "hello.handler"
+  runtime = "nodejs14.x"
+  handler = "handler.handler"
 
-  source_code_hash = data.archive_file.lambda_hello_world.output_base64sha256
+  source_code_hash = data.archive_file.lambda_fusion_manager.output_base64sha256
 
   role = aws_iam_role.lambda_exec.arn
+
+  environment {
+    variables = {
+      // TODO set to values of correct bucket
+      config_data_bucket = aws_s3_bucket.lambda_bucket.id
+      function_to_handle = each.value
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "hello_world" {
-  name = "/aws/lambda/${aws_lambda_function.hello_world.function_name}"
+  for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  name     = "/aws/lambda/${aws_lambda_function.hello_world[each.value].function_name}"
 
   retention_in_days = 5
 }
@@ -122,18 +132,20 @@ resource "aws_apigatewayv2_stage" "lambda" {
 }
 
 resource "aws_apigatewayv2_integration" "hello_world" {
-  api_id = aws_apigatewayv2_api.lambda.id
+  for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  api_id   = aws_apigatewayv2_api.lambda.id
 
-  integration_uri    = aws_lambda_function.hello_world.invoke_arn
+  integration_uri    = aws_lambda_function.hello_world[each.value].invoke_arn
   integration_type   = "AWS_PROXY"
   integration_method = "POST"
 }
 
 resource "aws_apigatewayv2_route" "hello_world" {
-  api_id = aws_apigatewayv2_api.lambda.id
+  for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  api_id   = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /hello"
-  target    = "integrations/${aws_apigatewayv2_integration.hello_world.id}"
+  route_key = "GET /${each.value}"
+  target    = "integrations/${aws_apigatewayv2_integration.hello_world[each.value].id}"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
@@ -143,9 +155,10 @@ resource "aws_cloudwatch_log_group" "api_gw" {
 }
 
 resource "aws_lambda_permission" "api_gw" {
+  for_each      = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello_world.function_name
+  function_name = aws_lambda_function.hello_world[each.value].function_name
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
