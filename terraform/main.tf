@@ -138,20 +138,28 @@ resource "aws_apigatewayv2_integration" "hello_world" {
   integration_uri    = aws_lambda_function.hello_world[each.value].invoke_arn
   integration_type   = "AWS_PROXY"
   integration_method = "POST"
+
+  request_parameters = {
+    "overwrite:header.X-Amz-Invocation-Type": "$request.header.InvocationType"
+  }
+
+  # request_parameters = {
+  #   "integration.request.header.X-Amz-Invocation-Type" = "method.request.header.InvocationType"
+  # }
 }
 
 resource "aws_apigatewayv2_route" "hello_world" {
   for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
   api_id   = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /${each.value}"
+  route_key = "POST /${each.value}"
   target    = "integrations/${aws_apigatewayv2_integration.hello_world[each.value].id}"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
   name = "/aws/api_gw/${aws_apigatewayv2_api.lambda.name}"
 
-  retention_in_days = 5
+  retention_in_days = 1
 }
 
 resource "aws_lambda_permission" "api_gw" {
