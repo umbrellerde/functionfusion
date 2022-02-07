@@ -5,5 +5,5 @@ variable "aws_region" {
 
 variable "bucket_name" {
   type    = string
-  default = "lambda-fusion-function-code"
+  default = "fusion-code"
 }

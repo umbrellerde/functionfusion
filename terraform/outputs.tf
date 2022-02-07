@@ -13,14 +13,22 @@ output "function_name" {
   ]
 }
 
-output "base_urls" {
-  description = "Base URL Gateway Stage"
+# output "base_urls" {
+#   description = "Base URL Gateway Stage"
 
-  value = aws_apigatewayv2_stage.lambda.invoke_url
+#   value = aws_apigatewayv2_stage.lambda.invoke_url
+# }
+
+output "lambda_urls" {
+  description = "All the URLs where the functions can be found"
+
+  value = [
+    for function in aws_api_gateway_resource.sync_root_resource : function.path
+  ]
 }
 
-# output "call_urls" {
-#   description = "All the URLs where the functions can be found"
+output "base_url" {
+  description = "Base URL of API GW"
 
-#   value = aws_apigatewayv2_integration.hello_world
-# }
+  value = aws_api_gateway_stage.stage.invoke_url
+}

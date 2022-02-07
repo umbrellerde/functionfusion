@@ -27,12 +27,12 @@ const fusionSetup = {
 exports.handler = async function (event) {
     console.log('Event: ', event)
 
-    let stepName = event.resource.substring(1)
-    let input = event.body
+    // let stepName = event.resource.substring(1)
+    // let input = event.body
 
-    await invokeLocal(event, stepName, input)
+    // await invokeLocal(event, stepName, input)
 
-    console.log("Function Setup:", fusionSetup)
+    // console.log("Function Setup:", fusionSetup)
 
     return {
         statusCode: 200,
