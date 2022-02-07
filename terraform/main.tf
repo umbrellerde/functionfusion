@@ -12,6 +12,10 @@ terraform {
   }
 }
 
+locals {
+  function_names = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+}
+
 provider "aws" {
   profile = "default"
   region  = var.aws_region
@@ -49,7 +53,7 @@ resource "aws_s3_bucket_object" "lambda_fusion_manager" {
 // Lambda Function
 
 resource "aws_lambda_function" "hello_world" {
-  for_each      = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each      = local.function_names
   function_name = "fusion-function-${each.value}"
 
   s3_bucket = aws_s3_bucket.lambda_bucket.id
@@ -72,7 +76,7 @@ resource "aws_lambda_function" "hello_world" {
 }
 
 resource "aws_cloudwatch_log_group" "hello_world" {
-  for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each = local.function_names
   name     = "/aws/lambda/${aws_lambda_function.hello_world[each.value].function_name}"
 
   retention_in_days = 1
@@ -180,14 +184,14 @@ resource "aws_api_gateway_rest_api" "api" {
 }
 
 resource "aws_api_gateway_resource" "sync_root_resource" {
-  for_each    = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each    = local.function_names
   path_part   = "SYNC-${each.value}"
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
 resource "aws_api_gateway_resource" "async_root_resource" {
-  for_each    = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each    = local.function_names
   path_part   = each.value
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
@@ -225,7 +229,7 @@ resource "aws_cloudwatch_log_group" "apigw" {
 }
 
 resource "aws_lambda_permission" "lambda_permission" {
-  for_each      = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each      = local.function_names
   statement_id  = "AllowLambdaInvokeFromApigateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world[each.value].function_name
@@ -238,7 +242,7 @@ resource "aws_lambda_permission" "lambda_permission" {
 
 module "async_post_endpoint" {
   source                          = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
-  for_each                        = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each                        = local.function_names
   http_method                     = "POST"
   integration_type                = "AWS"
   integration_http_method         = "POST"
@@ -253,7 +257,7 @@ module "async_post_endpoint" {
 
 module "sync_post_endpoint" {
   source                     = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
-  for_each                   = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each                   = local.function_names
   http_method                = "POST"
   integration_type           = "AWS"
   integration_http_method    = "POST"
@@ -268,7 +272,7 @@ module "sync_post_endpoint" {
 
 // Add the default Response for the sync endpoint since the module does not contain them
 resource "aws_api_gateway_integration_response" "sync_integration_response" {
-  for_each = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  for_each = local.function_names
 
   depends_on = [
     module.sync_post_endpoint
