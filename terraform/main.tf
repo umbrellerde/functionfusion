@@ -205,7 +205,7 @@ resource "aws_api_gateway_request_validator" "validator" {
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  depends_on = [module.async_post_endpoint, module.sync_post_endpoint, aws_api_gateway_integration_response.sync_integration_response]
+  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root]
 
   triggers = {
     redeployment = sha1(jsonencode(aws_api_gateway_rest_api.api.body))
@@ -255,40 +255,78 @@ module "async_post_endpoint" {
   enable_async_lambda_integration = true
 }
 
-module "sync_post_endpoint" {
-  source                     = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
-  for_each                   = local.function_names
-  http_method                = "POST"
-  integration_type           = "AWS"
-  integration_http_method    = "POST"
-  async_response_status_code = "200"
-  resource_path              = aws_api_gateway_resource.sync_root_resource[each.value].path_part
-  resource_id                = aws_api_gateway_resource.sync_root_resource[each.value].id
-  rest_api_id                = aws_api_gateway_rest_api.api.id
-  validator_id               = aws_api_gateway_request_validator.validator.id
-  lambda_invoke_arn          = aws_lambda_function.hello_world[each.value].invoke_arn
-  //enable_async_lambda_integration = false
-}
+// Add the sync lambda manually since the module apparently only supports async invocation.
 
-// Add the default Response for the sync endpoint since the module does not contain them
-resource "aws_api_gateway_integration_response" "sync_integration_response" {
+resource "aws_api_gateway_method" "sync_proxy" {
   for_each = local.function_names
-
-  depends_on = [
-    module.sync_post_endpoint
-  ]
-
   rest_api_id = aws_api_gateway_rest_api.api.id
   resource_id = aws_api_gateway_resource.sync_root_resource[each.value].id
   http_method = "POST"
-  status_code = "200"
-
-  //selection_pattern = "-"
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Token'",
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT,PATCH,DELETE'",
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
+  authorization = "NONE"
 }
+
+resource "aws_api_gateway_integration" "sync_lambda" {
+  for_each = local.function_names
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_method.sync_proxy[each.value].resource_id
+  http_method = aws_api_gateway_method.sync_proxy[each.value].http_method
+
+  integration_http_method = "POST"
+  type = "AWS_PROXY"
+  uri = aws_lambda_function.hello_world[each.value].invoke_arn
+}
+
+resource "aws_api_gateway_method" "sync_proxy_root" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_rest_api.api.root_resource_id
+  http_method = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "sync_lambda_root" {
+  for_each = local.function_names
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_method.sync_proxy_root.resource_id
+  http_method = aws_api_gateway_method.sync_proxy_root.http_method
+  integration_http_method = "POST"
+  type = "AWS_PROXY"
+  uri = aws_lambda_function.hello_world[each.value].invoke_arn
+}
+
+# module "sync_post_endpoint" {
+#   source                     = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
+#   for_each                   = local.function_names
+#   http_method                = "POST"
+#   integration_type           = "AWS"
+#   integration_http_method    = "POST"
+#   async_response_status_code = "200"
+#   resource_path              = aws_api_gateway_resource.sync_root_resource[each.value].path_part
+#   resource_id                = aws_api_gateway_resource.sync_root_resource[each.value].id
+#   rest_api_id                = aws_api_gateway_rest_api.api.id
+#   validator_id               = aws_api_gateway_request_validator.validator.id
+#   lambda_invoke_arn          = aws_lambda_function.hello_world[each.value].invoke_arn
+#   //enable_async_lambda_integration = false
+# }
+
+// Add the default Response for the sync endpoint since the module does not contain them
+# resource "aws_api_gateway_integration_response" "sync_integration_response" {
+#   for_each = local.function_names
+
+#   depends_on = [
+#     module.sync_post_endpoint
+#   ]
+
+#   rest_api_id = aws_api_gateway_rest_api.api.id
+#   resource_id = aws_api_gateway_resource.sync_root_resource[each.value].id
+#   http_method = "POST"
+#   status_code = "200"
+
+#   //selection_pattern = "-"
+
+#   response_parameters = {
+#     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Token'",
+#     "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT,PATCH,DELETE'",
+#     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+#   }
+# }
 
