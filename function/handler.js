@@ -1,7 +1,4 @@
 const handlers = {}
-
-const https = require("https")
-
 const fusionSetup = {
     A: {
         nextStep: ["B"],
@@ -10,7 +7,7 @@ const fusionSetup = {
     B: {
         appended: true,
         nextStep: ["C", "D"],
-        sync: false,
+        sync: true,
     },
     C: {
         appended: false,
@@ -24,17 +21,23 @@ const fusionSetup = {
     }
 }
 
+const https = require("https")
+const AWS = require("aws-sdk")
+
+let basePath = ""
+let baseUrl = ""
+
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
     console.log('Event: ', event)
     console.log('Env: ', process.env)
 
-    // const [baseUrl, basePath] = getUrlsFromEnv()
-
     // see ExampleLog.md for possible invocation types
-    // let [stepName, input] = getStepNameAndInputFromEvent(event)
+    let [stepName, input] = getStepNameAndInputFromEvent(event)
 
-    // let result = await invokeLocal(event, stepName, input)
+    let result = await invokeLocal(stepName, input)
+
+    console.log("Result is: ", result)
 
     return {
         statusCode: 200,
@@ -43,7 +46,7 @@ exports.handler = async function (event) {
         },
         body: JSON.stringify({
             inputEvent: event,
-            result: "result",
+            result: result,
             environ: process.env,
         }),
     }
@@ -63,11 +66,11 @@ function getHandler(resource) {
  * @param {*} step  The next step to call - will be appended to base url
  * @param {*} data  The data to call the next function with
  */
-async function invokeRemote(step, data, sync=false) {
+async function invokeRemote(step, data, sync = false) {
+    const [baseUrl, basePath] = await getUrlsFromEnv()
     return new Promise((resolve, reject) => {
 
         let invocationType = sync ? "SYNC-" : ""
-
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
@@ -78,8 +81,8 @@ async function invokeRemote(step, data, sync=false) {
                 'Content-Type': 'application/json'
             }
         }
+
         console.log("Sending Request:", options)
-        console.time('reqstart')
         let req = https.request(options, (res) => {
             console.log("Request Success", res)
             resultData = ''
@@ -87,7 +90,15 @@ async function invokeRemote(step, data, sync=false) {
                 resultData += d
             })
             res.on('end', () => {
-                resolve(JSON.parse(resultData))
+                console.log("Got Result: ", resultData)
+                if (sync) {
+                    let json = JSON.parse(resultData)
+                    console.log("Sync Response is: ", json.result)
+                    resolve(json.result)
+                } else {
+                    // Async Response is empty (it just has lots of headers and stuff...)
+                    resolve({})
+                }
             })
         })
         req.on('error', (e) => {
@@ -96,15 +107,15 @@ async function invokeRemote(step, data, sync=false) {
         })
         req.write(JSON.stringify(data))
         req.end()
-        console.timeEnd('reqstart')
     })
 }
 
-async function invokeLocal(event, stepName, input) {
+async function invokeLocal(stepName, input, toReturn = {}) {
 
     // Invoke the function
     let currentHandler = getHandler(stepName)
     let result = currentHandler.handler(input)
+    toReturn[stepName] = result
 
     // See the next Steps and invoke them recursively
 
@@ -118,15 +129,15 @@ async function invokeLocal(event, stepName, input) {
 
         if (nextStep.appended) {
             console.log("This step should happen here! Calling it...")
-            return invokeLocal(event, nextStepName, result)
+            return await invokeLocal(nextStepName, toReturn, toReturn)
         } else {
-            console.log(`This step should happen remotely! Firing off a Request. NextStep=${nextStep}`)
-            let remoteResult = await invokeRemote(event, nextStepName, result, nextStep.sync)
-            console.log("Answer from the next Invocation: (HTTP 202 => async)")
-            console.log(remoteResult)
-            return remoteResult
+            console.log(`This step should happen remotely! Firing off a Request. NextStep=${nextStepName}`)
+            let remoteResult = await invokeRemote(nextStepName, toReturn, nextStep.sync)
+            toReturn[nextStepName] = remoteResult
         }
     }
+
+    return toReturn
 }
 
 function getStepNameAndInputFromEvent(event) {
@@ -141,10 +152,24 @@ function getStepNameAndInputFromEvent(event) {
     }
 }
 
-function getUrlsFromEnv() {
-    // set from terraform
-    let env = process.env["stage_url"]
-    let lastSlash = env.lastIndexOf("/")
-    // everything before the last slash , everything after the last slash
-    return [env.substring(0, lastSlash), env.substring(lastSlash + 1)]
+async function getUrlsFromEnv() {
+    if (basePath === "") {
+        // TODO we should get this from somewhere else
+        baseUrl = "onlyStage" //process.env["stage_name"]
+
+        let apigw = new AWS.APIGateway();
+        let promise = new Promise((resolve, reject) => {
+            let req = apigw.getRestApis({}, function (err, data) {
+                if (err) reject(err)
+                else resolve(data.items)
+            })
+            req.send()
+        })
+        let result = await promise
+
+        let apiId = result.filter((i) => i.name === "lambda-api")[0].id
+        // everything before the last slash , everything after the last slash
+        basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
+    }
+    return [basePath, baseUrl]
 }

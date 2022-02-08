@@ -97,6 +97,20 @@ resource "aws_iam_role" "lambda_exec" {
       }
     ]
   })
+
+  inline_policy {
+    name = "read_apigw"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action   = "apigateway:GET"
+          Effect   = "Allow"
+          Resource = "*"
+        }
+      ]
+    })
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
@@ -185,37 +199,37 @@ module "async_post_endpoint" {
 
 // Add the sync lambda manually since the module apparently only supports async invocation.
 resource "aws_api_gateway_method" "sync_proxy" {
-  for_each = local.function_names
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.sync_root_resource[each.value].id
-  http_method = "POST"
+  for_each      = local.function_names
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.sync_root_resource[each.value].id
+  http_method   = "POST"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "sync_lambda" {
-  for_each = local.function_names
+  for_each    = local.function_names
   rest_api_id = aws_api_gateway_rest_api.api.id
   resource_id = aws_api_gateway_method.sync_proxy[each.value].resource_id
   http_method = aws_api_gateway_method.sync_proxy[each.value].http_method
 
   integration_http_method = "POST"
-  type = "AWS_PROXY"
-  uri = aws_lambda_function.hello_world[each.value].invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.hello_world[each.value].invoke_arn
 }
 
 resource "aws_api_gateway_method" "sync_proxy_root" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_rest_api.api.root_resource_id
-  http_method = "POST"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_rest_api.api.root_resource_id
+  http_method   = "POST"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "sync_lambda_root" {
-  for_each = local.function_names
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_method.sync_proxy_root.resource_id
-  http_method = aws_api_gateway_method.sync_proxy_root.http_method
+  for_each                = local.function_names
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_method.sync_proxy_root.resource_id
+  http_method             = aws_api_gateway_method.sync_proxy_root.http_method
   integration_http_method = "POST"
-  type = "AWS_PROXY"
-  uri = aws_lambda_function.hello_world[each.value].invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.hello_world[each.value].invoke_arn
 }
