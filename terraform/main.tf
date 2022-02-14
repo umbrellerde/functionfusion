@@ -71,6 +71,7 @@ resource "aws_lambda_function" "hello_world" {
       // TODO set to values of correct bucket
       config_data_bucket = aws_s3_bucket.lambda_bucket.id
       function_to_handle = each.value
+      NODE_OPTIONS = "--enable-source-maps"
     }
   }
 }

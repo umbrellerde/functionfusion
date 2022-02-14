@@ -1,63 +1,46 @@
 const handlers = {}
-const fusionSetup = {
-    A: {
-        nextStep: ["B"],
-        sync: false,
-    },
-    B: {
-        appended: true,
-        nextStep: ["C", "D"],
-        sync: true,
-    },
-    C: {
-        appended: false,
-        nextStep: [],
-        sync: false,
-    },
-    D: {
-        appended: false,
-        nextStep: [],
-        sync: false,
-    }
-}
 
 const https = require("https")
 const AWS = require("aws-sdk")
+const crypto = require("crypto")
 
 let basePath = ""
 let baseUrl = ""
+const functionToHandle = process.env["function_to_handle"]
+
+// TODO Set Dynamically From Optimizer
+fusionGroups = [["A", "B"], ["C"], ["D"]]
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
-    console.log('Event: ', event)
-    console.log('Env: ', process.env)
 
     // see ExampleLog.md for possible invocation types
-    let [stepName, input] = getStepNameAndInputFromEvent(event)
+    let input = getInputFromEvent(event)
 
-    let result = await invokeLocal(stepName, input)
+    let firstStepInChain = false
+    if (!input.hasOwnProperty('traceId')) {
+        let traceId = generateTraceId()
+        input['traceId'] = traceId
+        firstStepInChain = true
+        
+    }
+    console.log("TraceId", input['traceId'])
+    console.log("FirstStep", firstStepInChain)
 
-    console.log("Result is: ", result)
+    // Invoke the function with await because execution stops when this function returns
+    let timeBase = Date.now()
+    let result = await invokeLocal(functionToHandle, input, true)
+    console.log("time-base", Date.now() - timeBase)
+
+    console.log("Result", result)
 
     return {
         statusCode: 200,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            inputEvent: event,
-            result: result,
-            environ: process.env,
-        }),
+        body: JSON.stringify(result),
     }
-}
-
-function getHandler(resource) {
-    if (handlers[resource]) {
-        return handlers[resource]
-    }
-    handlers[resource] = require(`./fusionables/${resource}/handler`)
-    return handlers[resource]
 }
 
 /**
@@ -67,6 +50,7 @@ function getHandler(resource) {
  * @param {*} data  The data to call the next function with
  */
 async function invokeRemote(step, data, sync = false) {
+    let timeRemote = Date.now()
     const [baseUrl, basePath] = await getUrlsFromEnv()
     return new Promise((resolve, reject) => {
 
@@ -84,25 +68,25 @@ async function invokeRemote(step, data, sync = false) {
 
         console.log("Sending Request:", options)
         let req = https.request(options, (res) => {
-            console.log("Request Success", res)
             resultData = ''
             res.on('data', (d) => {
                 resultData += d
             })
             res.on('end', () => {
-                console.log("Got Result: ", resultData)
                 if (sync) {
                     let json = JSON.parse(resultData)
-                    console.log("Sync Response is: ", json.result)
-                    resolve(json.result)
+                    console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+                    resolve(json)
                 } else {
                     // Async Response is empty (it just has lots of headers and stuff...)
+                    console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
                     resolve({})
                 }
             })
         })
         req.on('error', (e) => {
             console.log('Request Error', e)
+            console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
             reject(e)
         })
         req.write(JSON.stringify(data))
@@ -110,45 +94,20 @@ async function invokeRemote(step, data, sync = false) {
     })
 }
 
-async function invokeLocal(stepName, input, toReturn = {}) {
-
-    // Invoke the function
+async function invokeLocal(stepName, input, sync) {
+    let timeLocal = Date.now()
     let currentHandler = getHandler(stepName)
-    let result = currentHandler.handler(input)
-    toReturn[stepName] = result
-
-    // See the next Steps and invoke them recursively
-
-    let numFusions = fusionSetup[stepName].nextStep.length;
-
-    for (let i = 0; i < numFusions; i++) {
-        let nextStepName = fusionSetup[stepName].nextStep[i]
-        let nextStep = fusionSetup[nextStepName]
-
-        console.log(`Next Step is ${nextStepName}`)
-
-        if (nextStep.appended) {
-            console.log("This step should happen here! Calling it...")
-            return await invokeLocal(nextStepName, toReturn, toReturn)
-        } else {
-            console.log(`This step should happen remotely! Firing off a Request. NextStep=${nextStepName}`)
-            let remoteResult = await invokeRemote(nextStepName, toReturn, nextStep.sync)
-            toReturn[nextStepName] = remoteResult
-        }
-    }
-
-    return toReturn
+    let res = currentHandler.handler(input, callFunction)
+    console.log(`time-local-${sync}-${functionToHandle}-${stepName}`, Date.now() - timeLocal)
+    return res
 }
 
-function getStepNameAndInputFromEvent(event) {
-    // set from terraform
-    let name = process.env["function_to_handle"]
-
+function getInputFromEvent(event) {
     // If the event has the property requestContext we assume its a (sync) HTTP request
     if (event.requestContext) {
-        return [name, event.body]
+        return JSON.parse(event.body)
     } else {
-        return [name, event]
+        return event
     }
 }
 
@@ -172,4 +131,45 @@ async function getUrlsFromEnv() {
         basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
     }
     return [basePath, baseUrl]
+}
+
+function getHandler(resource) {
+    if (handlers[resource]) {
+        return handlers[resource]
+    }
+    handlers[resource] = require(`./fusionables/${resource}/handler`)
+    return handlers[resource]
+}
+
+function isInSameFusionGroup(thisName, otherName) {
+    return fusionGroups.filter((e) => e.includes(thisName))[0].includes(otherName)
+}
+
+/**
+ * 
+ * @param {string} name the name of the function that should be called
+ * @param {*} input input to pass to the function
+ * @param {*} sync whether the response should be await-ed.
+ * @returns (A Promise) containing the result, if sync is true. Otherwise returns a promise that contains something (either {} if the request was sent to another function or the result) that must be await-ed before the function ends, otherwise their execution may be finished prematurely
+ */
+function callFunction(name, input, sync) {
+    // Do the basic invokeRemote, invokeLocal stuff here
+    if (isInSameFusionGroup(functionToHandle, name)) {
+        console.log("I should call function", name, "with input", input, "and sync", sync, "locally")
+        return invokeLocal(name, input, sync)
+    } else {
+        console.log("I should call function", name, "with input", input, "and sync", sync, "remotely")
+        return invokeRemote(name, input, sync)
+    }
+}
+
+/**
+ * generates a trace id that encodes the current setup as well as a random part identifying a single execution flow
+ */
+function generateTraceId() {
+    // Elements within a group are joined by ".", between fusion groups there is a ","
+    let fusionSetupPart = fusionGroups.map(e => e.join(".")).join(",")
+    let randomTracePart = crypto.randomBytes(8).toString("hex")
+
+    return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
 }

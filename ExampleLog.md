@@ -5,14 +5,24 @@ Note that the report contains `Init Duration: 150.35 ms` for the first request t
 `Duration: 48.73 ms	Billed Duration: 49 ms	Memory Size: 128 MB	Max Memory Used: 55 MB` exists in every report.
 
 ```
-START RequestId: d11fa618-9d0d-4235-aa65-36081793488e Version: $LATEST
-2022-02-02T08:55:22.954Z	d11fa618-9d0d-4235-aa65-36081793488e	INFO	Event:  [...]
-END RequestId: d11fa618-9d0d-4235-aa65-36081793488e
-REPORT RequestId: d11fa618-9d0d-4235-aa65-36081793488e	Duration: 48.73 ms	Billed Duration: 49 ms	Memory Size: 128 MB	Max Memory Used: 55 MB	Init Duration: 150.35 ms	
-START RequestId: bca3f17f-c293-44be-b966-ccf2b1e2bc92 Version: $LATEST
-2022-02-02T08:55:26.630Z	bca3f17f-c293-44be-b966-ccf2b1e2bc92	INFO	Event:  [...]
-END RequestId: bca3f17f-c293-44be-b966-ccf2b1e2bc92
-REPORT RequestId: bca3f17f-c293-44be-b966-ccf2b1e2bc92	Duration: 1.81 ms	Billed Duration: 2 ms	Memory Size: 128 MB	Max Memory Used: 55 MB	
+2022-02-14T12:06:40.696+01:00	START RequestId: 0dae47da-7e8d-4dae-a8d5-b2c24040f825 Version: $LATEST
+2022-02-14T12:06:40.698+01:00	2022-02-14T11:06:40.698Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO generated Trace id A.B,C,D-0bd40a5f77295625
+2022-02-14T12:06:40.698+01:00	2022-02-14T11:06:40.698Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO TraceId A.B,C,D-0bd40a5f77295625
+2022-02-14T12:06:40.698+01:00	2022-02-14T11:06:40.698Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO object
+2022-02-14T12:06:40.701+01:00	2022-02-14T11:06:40.701Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO A: Event: { sync: true, traceId: 'A.B,C,D-0bd40a5f77295625' }
+2022-02-14T12:06:40.701+01:00	2022-02-14T11:06:40.701Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO I should call function C with input { helloFrom: 'A', traceId: 'A.B,C,D-0bd40a5f77295625' } and sync true remotely
+2022-02-14T12:06:41.179+01:00	2022-02-14T11:06:41.179Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO finished calling C Promise { <pending> }
+2022-02-14T12:06:41.179+01:00	2022-02-14T11:06:41.179Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO I should call function B with input { helloFrom: 'A', traceId: 'A.B,C,D-0bd40a5f77295625' } and sync true locally
+2022-02-14T12:06:41.180+01:00	2022-02-14T11:06:41.180Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO B: Event: { helloFrom: 'A', traceId: 'A.B,C,D-0bd40a5f77295625' }
+2022-02-14T12:06:41.180+01:00	2022-02-14T11:06:41.180Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO time-local-true-A-B: 0.593ms
+2022-02-14T12:06:41.180+01:00	2022-02-14T11:06:41.180Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO finished calling B
+2022-02-14T12:06:41.180+01:00	2022-02-14T11:06:41.180Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO time-local-true-A-A: 481.638ms
+2022-02-14T12:06:41.498+01:00	2022-02-14T11:06:41.479Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO Sending Request: { host: 'y1joj4k6w9.execute-api.eu-central-1.amazonaws.com', path: '/onlyStage/SYNC-C', method: 'POST', headers: { 'Content-Type': 'application/json' } }
+2022-02-14T12:06:42.165+01:00	2022-02-14T11:06:42.165Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO time-remote-true-A-C: 1.464s
+2022-02-14T12:06:42.178+01:00	2022-02-14T11:06:42.177Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO time-base: 1.479s
+2022-02-14T12:06:42.178+01:00	2022-02-14T11:06:42.178Z 0dae47da-7e8d-4dae-a8d5-b2c24040f825 INFO Result { step: 'A', resultFromB: { everythings: 'all right', step: 'B' }, resultFromC: { everythings: 'all right', step: 'C' } }
+2022-02-14T12:06:42.179+01:00	END RequestId: 0dae47da-7e8d-4dae-a8d5-b2c24040f825
+2022-02-14T12:06:42.179+01:00	REPORT RequestId: 0dae47da-7e8d-4dae-a8d5-b2c24040f825 Duration: 1483.10 ms Billed Duration: 1484 ms Memory Size: 128 MB Max Memory Used: 79 MB Init Duration: 444.43 ms 
 ```
 
 A Synchronous Invocation looks like this:
