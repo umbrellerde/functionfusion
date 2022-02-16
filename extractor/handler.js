@@ -58,9 +58,24 @@ async function saveInvocationsToS3(invocations) {
         let newTraces = fusionSetups[key]
         // Get existing Traces
         let existingTraces = await getFromBucket(bucketName, `${key}.json`)
+        console.log("Got existing traces", existingTraces)
+
+        // Check if the object is not empty
+        if (Object.keys(existingTraces).length > 0) {
+            console.log("Rewriting Keys")
+            let tracesList = []
+            for (const [key, value] of Object.entries(existingTraces)) {
+                console.log("Rewriting Key", key)
+                console.log("Rewriting Value", value)
+                tracesList.push(value)
+            }
+            existingTraces = tracesList
+        }
+
         console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
         // Merge together
         let mergedTraces = Object.assign(existingTraces, newTraces)
+        console.log("Merged Traces are:", mergedTraces)
         // Save to S3
         let promise = uploadToBucket(bucketName, `${key}.json`, mergedTraces)
         promises.push(promise)
@@ -128,7 +143,6 @@ function extractInvocation(invocationEvents) {
     let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
     let maxMemoryUsed = parseInt(report.split("Max Memory Used: ")[1].split(" ")[0])
 
-    console.log("first message is", invocationEvents[1])
     let startTimestamp = parseInt(invocationEvents[1]["timestamp"])
     // Not the report, but the END message ==> second to last message
     let endTimestamp = parseInt(invocationEvents[invocationEvents.length - 2]["timestamp"])
@@ -200,7 +214,6 @@ async function uploadToBucket(bucket, key, body) {
         Key: key,
         Body: JSON.stringify(body),
     }).promise()
-    console.log("Uploaded File to Bucket: ", resp)
 }
 
 /**
@@ -219,18 +232,14 @@ async function getFromBucket(bucket, key) {
             Key: key
         }).promise()
     } catch (err) {
-        console.log("HeadBucket Returned Error", err)
         return {}
     }
 
-    console.log("Downloading Object, Head is", head)
 
     let resp = await s3.getObject({
         Bucket: bucket,
         Key: key
     }).promise()
-
-    console.log("Get Bucket got response", resp)
 
     let json = JSON.parse(resp.Body.toString('utf-8'))
     return json
