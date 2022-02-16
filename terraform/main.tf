@@ -69,9 +69,10 @@ resource "aws_lambda_function" "hello_world" {
   environment {
     variables = {
       // TODO set to values of correct bucket
-      config_data_bucket = aws_s3_bucket.lambda_bucket.id
-      function_to_handle = each.value
+      S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
+      FUNCTION_TO_HANDLE = each.value
       NODE_OPTIONS = "--enable-source-maps"
+      FUSION_GROUPS = join(",", local.function_names)
     }
   }
 }

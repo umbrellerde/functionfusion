@@ -1,7 +1,5 @@
 # Optimizer
 
-Read the Cloudwatch logs of the functions, read the Report.
+Read the invocations from the bucket
 
-Do some magic to determine where a function should be placed.
-
-Write the result into a bucket
+Do some magic to determine the next fusion setup

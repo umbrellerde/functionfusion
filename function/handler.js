@@ -6,10 +6,8 @@ const crypto = require("crypto")
 
 let basePath = ""
 let baseUrl = ""
-const functionToHandle = process.env["function_to_handle"]
-
-// TODO Set Dynamically From Optimizer
-fusionGroups = [["A", "B"], ["C"], ["D"]]
+const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
+fusionGroups = getFusionGroupsFromEnv() 
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -172,4 +170,13 @@ function generateTraceId() {
     let randomTracePart = crypto.randomBytes(8).toString("hex")
 
     return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
+}
+
+function getFusionGroupsFromEnv() {
+    // result should be[["A", "B"], ["C"], ["D"]]
+    // from A.B,C,D
+    let str = process.env["FUSION_GROUPS"]
+    let groups = str.split(",")
+    let groupsSplitted = groups.map((e) => e.split("."))
+    return groupsSplitted
 }
