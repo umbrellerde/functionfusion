@@ -7,7 +7,8 @@ const crypto = require("crypto")
 let basePath = ""
 let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
-fusionGroups = getFusionGroupsFromEnv() 
+fusionGroups = getFusionGroupsFromEnv()
+let currentTraceId = ""
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -19,6 +20,7 @@ exports.handler = async function (event) {
     if (!input.hasOwnProperty('traceId')) {
         let traceId = generateTraceId()
         input['traceId'] = traceId
+        currentTraceId = traceId
         firstStepInChain = true
         
     }
@@ -151,7 +153,7 @@ function isInSameFusionGroup(thisName, otherName) {
  * @returns (A Promise) containing the result, if sync is true. Otherwise returns a promise that contains something (either {} if the request was sent to another function or the result) that must be await-ed before the function ends, otherwise their execution may be finished prematurely
  */
 function callFunction(name, input, sync) {
-    // Do the basic invokeRemote, invokeLocal stuff here
+    input['traceId'] = currentTraceId
     if (isInSameFusionGroup(functionToHandle, name)) {
         console.log("I should call function", name, "with input", input, "and sync", sync, "locally")
         return invokeLocal(name, input, sync)

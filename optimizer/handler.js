@@ -1,13 +1,15 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
 
-AWS.config.update({region: process.env["AWS_REGION"]})
+AWS.config.update({ region: process.env["AWS_REGION"] })
 
 const s3 = new AWS.S3()
 const lambda = new AWS.Lambda();
 
 const bucketName = process.env["S3_BUCKET_NAME"]
 const functionLogGroupNames = process.env["FUNCTION_NAMES"].split(",")
+
+const setupFromList = (list) => list.map(e => e.sort().join(".")).sort().join(",")
 
 exports.handler = async function (event) {
 
@@ -19,6 +21,12 @@ exports.handler = async function (event) {
     // TODO read all setupsTested and find a new setup to try out
 
     let newConfiguration = generateNewConfiguration(setupsTested)
+    let stillTryingNewConfigurations = true
+
+    if (newConfiguration == null) {
+        newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+        stillTryingNewConfigurations = false
+    }
 
     // Update the Env Variables of all Functions
     let promises = []
@@ -28,7 +36,7 @@ exports.handler = async function (event) {
             FunctionName: fname,
             Environment: {
                 Variables: {
-                    'FUSION_GROUPS': newConfiguration,
+                    'FUSION_GROUPS': setupFromList(newConfiguration),
                     'S3_BUCKET_NAME': bucketName,
                     'FUNCTION_TO_HANDLE': fname.split("-")[2]
                 }
@@ -44,8 +52,29 @@ exports.handler = async function (event) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: {setupsTested: setupsTested},
+        body: { setupsTested: setupsTested, newConfiguration: newConfiguration, optimumFound: !stillTryingNewConfigurations },
     }
+}
+
+function getConfigurationWithLowestLatency(setupsTested) {
+    // Iterate over all Keys, get their content. Iterate over the Content and calculate the average billedDuration
+    let averages = {}
+    for (let key of Object.keys(setupsTested)) {
+        let sumDuration = 0;
+        for (let i = 0; i < setupsTested[key].length; i++) {
+            sumDuration += setupsTested[key][i]["billedDuration"]
+        }
+        averages[key] = sumDuration/setupsTested[key].length
+    }
+
+    let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
+    for (let key of Object.keys(averages)) {
+        if (averages[key] < minValue) {
+            minKey = key
+            minValue = averages[key]
+        }
+    }
+    return minKey
 }
 
 /**
@@ -82,13 +111,80 @@ function generateNewConfiguration(setupsTested) {
     // function-fusion-A ==> A
     let functionNames = functionLogGroupNames.map(fn => fn.split("-")[2])
 
-    let resultConfiguration = "A.B,C,D"
+    let resultConfiguration = getNextPossibleConfiguration(setupsTested, functionNames)
 
     // Test for valid Result Configuration
     for (let fname of functionNames) {
         assert(resultConfiguration.includes(fname), "The new configuration must include all function names")
     }
-    return "A.B,C,D"
+    return resultConfiguration
+}
+
+/**
+ * For the exhaustive strategy: Given a list of all tested setups, generate a new untested setup
+ * @param {*} setupsTested 
+ * @param {*} functionNames 
+ * @returns The setup string if a new one was found, null otherwise
+ */
+ function getNextPossibleConfiguration(setupsTested, functionNames) {
+    let alreadyTested = (setup) => Object.keys(setupsTested).includes(setup)
+
+    // https://stackoverflow.com/questions/42773836
+    function* subsets(array, offset = 0) {
+        while (offset < array.length) {
+            let first = array[offset++];
+            for (let subset of subsets(array, offset)) {
+                subset.push(first);
+                yield subset;
+            }
+        }
+        yield [];
+    }
+
+    /**
+     * 
+     * @param {*} deiniteGroups a list of lists with the set groups
+     * @param {*} ungrouped a list of functions that still need to be grouped
+     */
+    function tryAllCombinations(definiteGroups, ungrouped) {
+        console.log("Trying definite, upgrouped: ", definiteGroups, ungrouped)
+        for (let subset of subsets(ungrouped)) {
+            console.log("...subset", subset)
+            if (subset.length == 0) {
+                console.log("Skipping since subset is empty")
+                continue
+            }
+
+            let restUngrouped = ungrouped.filter((name) => !subset.includes(name))
+            let newDefiniteGroups = definiteGroups.slice()
+            newDefiniteGroups.push(subset)
+
+            if (restUngrouped.length == 0) {
+                // All elements have been grouped
+                // console.log("Testing definite Group:", newDefiniteGroups)
+                // console.log("Setup is:", setupFromList(newDefiniteGroups))
+                // console.log("AlreadyTested", alreadyTested(setupFromList(newDefiniteGroups)))
+                // console.log("(Currently trying definite)", definiteGroups)
+                // console.log("(Current Subset)", subset)
+                if (!alreadyTested(setupFromList(newDefiniteGroups))) {
+                    console.log("!!!!!!! Found One! ", newDefiniteGroups)
+                    return newDefiniteGroups
+                }
+                console.log("...New Group was already tested, continuing", newDefiniteGroups)
+            } else {
+                console.log("...Since restUngrouped is not empty, going deeper")
+                let subcombinations = tryAllCombinations(newDefiniteGroups, restUngrouped)
+                if (subcombinations != null) {
+                    return subcombinations
+                }
+                // There are no subcombinations
+                // Continue trying
+            }
+        }
+        console.log("I have found nothing an i am all out of ideas")
+        return null
+    }
+    return tryAllCombinations([], functionNames)
 }
 
 /**

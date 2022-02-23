@@ -118,7 +118,6 @@ async function getInvocationsFromLogGroup(logGroupName) {
                 startI = i
             } else if (currentEvent["message"].includes("REPORT RequestId: ")) {
                 invocations.push(extractInvocation(logEvents["events"].slice(startI, i + 1)))
-                startI = 0
             }
         }
     }
@@ -138,6 +137,10 @@ function extractInvocation(invocationEvents) {
 
     // The second line (first line of the log) should contain the TraceId, for example
     // .replace call replaces newlines with empty string
+    console.log("Amount of Messages are", invocationEvents.length)
+    console.log("First message (TraceId) is", invocationEvents[1]["message"])
+    console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
+    console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
     let [fusionGroup, source, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
     let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
     let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
