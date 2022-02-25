@@ -10,6 +10,7 @@ const bucketName = process.env["S3_BUCKET_NAME"]
 const functionLogGroupNames = process.env["FUNCTION_NAMES"].split(",")
 
 const setupFromList = (list) => list.map(e => e.sort().join(".")).sort().join(",")
+const listFromSetup = (setup) => setup.split(",").map(g => g.split("."))
 
 exports.handler = async function (event) {
 
@@ -18,14 +19,14 @@ exports.handler = async function (event) {
 
     console.log("All Setups tested", setupsTested)
 
-    // TODO read all setupsTested and find a new setup to try out
-
-    let newConfiguration = generateNewConfiguration(setupsTested)
+    let newConfiguration = iterateOnLowestLatency(setupsTested)
     let stillTryingNewConfigurations = true
-
     if (newConfiguration == null) {
-        newConfiguration = getConfigurationWithLowestLatency(setupsTested)
-        stillTryingNewConfigurations = false
+        newConfiguration = generateNewConfiguration(setupsTested)
+        if (newConfiguration == null) {
+            newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+            stillTryingNewConfigurations = false
+        }
     }
 
     // Update the Env Variables of all Functions
@@ -64,7 +65,7 @@ function getConfigurationWithLowestLatency(setupsTested) {
         for (let i = 0; i < setupsTested[key].length; i++) {
             sumDuration += setupsTested[key][i]["billedDuration"]
         }
-        averages[key] = sumDuration/setupsTested[key].length
+        averages[key] = sumDuration / setupsTested[key].length
     }
 
     let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
@@ -126,7 +127,7 @@ function generateNewConfiguration(setupsTested) {
  * @param {*} functionNames 
  * @returns The setup string if a new one was found, null otherwise
  */
- function getNextPossibleConfiguration(setupsTested, functionNames) {
+function getNextPossibleConfiguration(setupsTested, functionNames) {
     let alreadyTested = (setup) => Object.keys(setupsTested).includes(setup)
 
     // https://stackoverflow.com/questions/42773836
@@ -186,6 +187,66 @@ function generateNewConfiguration(setupsTested) {
     }
     return tryAllCombinations([], functionNames)
 }
+
+function iterateOnLowestLatency(setupsTested) {
+    let currentMin = getConfigurationWithLowestLatency(setupsTested)
+    let currentOptimalSetup = listFromSetup(currentMin)
+    // change something about this configuration smartly:
+    // - Check if there are sync calls to functions that are not fused yet.
+    // - Change a SINGLE thing about the configuration and try it out.
+
+    // Get a Set of Sets where every inside list are all the functions that sync-call each other
+    let syncCalls = new Set()
+    for (let key of Object.keys(setupsTested)) {
+        let invocationsList = setupsTested[key]
+        for (let invocation of invocationsList) {
+            // Get all calls that do not call themselfes and are sync calls
+            let syncSet = 
+                invocation.calls
+                .filter((call) => call["called"] !== call["caller"] && call["sync"] == true)
+                .map((call) => call["called"])
+            // Add the syncSet to the Set that contains source
+            let source = invocation["currentFunction"]
+            let sourceAlreadyInSubset = false
+            for (let subset of syncCalls) {
+                if (subset.has(source)) {
+                    syncSet.forEach(elem => subset.add(elem))
+                    sourceAlreadyInSubset = true
+                    break
+                }
+            }
+            if (!sourceAlreadyInSubset) {
+                syncSet.push(source)
+                syncCalls.add(new Set(syncSet))
+            }
+        }
+    }
+    // Compare setup and syncCalls to find possible improvements
+    for (let fusionGroup of currentOptimalSetup) {
+        for (let fktn of fusionGroup) {
+            let syncSet = syncCalls.filter(s => s.has(fktn))
+            // Check if all members of syncSet are also in fusion group -> Move them togeher if not
+            for (let shouldBeSync of syncSet) {
+                if (!fusionGroup.includes(shouldBeSync)) {
+                    // Found one! shouldBeSync should be in Fusion group, but its not.
+                    // Remove shouldBeSync from other fusion group
+                    currentOptimalSetup.forEach(fusionGroup => {
+                        const index = fusionGroup.indexOf(shouldBeSync)
+                        if (index > -1) {
+                            fusionGroup.splice(index, 1); // 2nd parameter means remove one item only
+                          }
+                    })
+                    // Add to current fusion group
+                    fusionGroup.push(shouldBeSync)
+                    return fusionGroup
+                }
+            }
+        }
+    }
+    // There is nothing that can be fused from the current function
+    return null
+}
+
 
 /**
  * 

@@ -7,3 +7,8 @@ variable "bucket_name" {
   type    = string
   default = "fusion-code"
 }
+
+variable "use_case" {
+  description = "The Name of the Folder where the function lives in"
+  default = "useCaseIoT"
+}

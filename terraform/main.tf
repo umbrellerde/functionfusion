@@ -39,7 +39,7 @@ resource "aws_s3_bucket" "lambda_bucket" {
 data "archive_file" "lambda_fusion_manager" {
   type = "zip"
 
-  source_dir  = "${path.module}/../function"
+  source_dir  = "${path.module}/../${var.use_case}"
   output_path = "${path.module}/../function.zip"
 }
 
@@ -68,10 +68,8 @@ resource "aws_lambda_function" "hello_world" {
 
   environment {
     variables = {
-      // TODO set to values of correct bucket
       S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
       FUNCTION_TO_HANDLE = each.value
-      NODE_OPTIONS = "--enable-source-maps"
       FUSION_GROUPS = join(",", local.function_names)
     }
   }
@@ -106,7 +104,7 @@ resource "aws_iam_role" "lambda_exec" {
       Version = "2012-10-17"
       Statement = [
         {
-          Action   = "apigateway:GET"
+          Action   = ["apigateway:GET", "dynamodb:*"]
           Effect   = "Allow"
           Resource = "*"
         }

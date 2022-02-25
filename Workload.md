@@ -19,3 +19,8 @@ ActionSignage: Adjust Street Signs (==> Saves to DynamoDB)
 ActionTrafficReroute: Send out traffic warnings via different channels (==> Mock API calls)
 
 AirQualityAlarm
+
+## Metrics
+
+- E2E Latency in "critical path" ==> Should be lower since long async calls can be performed by another function.
+- Total Billed Duration ==> Maybe lower since not so many cold starts if functions can be reused

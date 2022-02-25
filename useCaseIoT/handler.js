@@ -7,7 +7,7 @@ const crypto = require("crypto")
 let basePath = ""
 let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
-fusionGroups = getFusionGroupsFromEnv()
+let fusionGroups = getFusionGroupsFromEnv()
 let currentTraceId = ""
 
 exports.handler = async function (event) {

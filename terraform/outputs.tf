@@ -19,11 +19,19 @@ output "function_name" {
 #   value = aws_apigatewayv2_stage.lambda.invoke_url
 # }
 
-output "lambda_urls" {
-  description = "All the URLs where the functions can be found"
+output "lambda_urls_sync" {
+  description = "All the URLs where the sync functions can be found"
 
   value = [
     for function in aws_api_gateway_resource.sync_root_resource : function.path
+  ]
+}
+
+output "lambda_urls_async" {
+  description = "All the URLs where the async functions can be found"
+
+  value = [
+    for function in aws_api_gateway_resource.async_root_resource : function.path
   ]
 }
 
