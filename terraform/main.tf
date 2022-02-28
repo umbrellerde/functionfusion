@@ -147,7 +147,11 @@ resource "aws_api_gateway_request_validator" "validator" {
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root]
+  // TODO Maybe this fixes terraform, if not please remove
+  stage_name = "onlyStage"
+
+  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root,
+  aws_api_gateway_method.sync_proxy, aws_api_gateway_method.sync_proxy_root]
 
   triggers = {
     redeployment = sha1(jsonencode(aws_api_gateway_rest_api.api.body))

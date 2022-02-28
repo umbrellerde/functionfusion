@@ -199,6 +199,7 @@ function iterateOnLowestLatency(setupsTested) {
     let syncCalls = new Set()
     for (let key of Object.keys(setupsTested)) {
         let invocationsList = setupsTested[key]
+        console.log("Invocations List current tested: ", invocationsList)
         for (let invocation of invocationsList) {
             // Get all calls that do not call themselfes and are sync calls
             let syncSet = 
@@ -209,6 +210,7 @@ function iterateOnLowestLatency(setupsTested) {
             let source = invocation["currentFunction"]
             let sourceAlreadyInSubset = false
             for (let subset of syncCalls) {
+                console.log("Sync calls subset: ", subset, "testing for", invocation)
                 if (subset.has(source)) {
                     syncSet.forEach(elem => subset.add(elem))
                     sourceAlreadyInSubset = true
@@ -221,6 +223,8 @@ function iterateOnLowestLatency(setupsTested) {
             }
         }
     }
+    console.log("----- Done Setting up, now finding new optimums.")
+    console.log("syncCalls", syncCalls)
     // Compare setup and syncCalls to find possible improvements
     for (let fusionGroup of currentOptimalSetup) {
         for (let fktn of fusionGroup) {
@@ -228,13 +232,11 @@ function iterateOnLowestLatency(setupsTested) {
             // Check if all members of syncSet are also in fusion group -> Move them togeher if not
             for (let shouldBeSync of syncSet) {
                 if (!fusionGroup.includes(shouldBeSync)) {
+                    console.log("!!! Found one! FusionGroup", fusionGroup, "does not include", shouldBeSync, "!")
                     // Found one! shouldBeSync should be in Fusion group, but its not.
                     // Remove shouldBeSync from other fusion group
                     currentOptimalSetup.forEach(fusionGroup => {
-                        const index = fusionGroup.indexOf(shouldBeSync)
-                        if (index > -1) {
-                            fusionGroup.splice(index, 1); // 2nd parameter means remove one item only
-                          }
+                        fusionGroup = fusionGroup.filter(item => item !== shouldBeSync)
                     })
                     // Add to current fusion group
                     fusionGroup.push(shouldBeSync)
