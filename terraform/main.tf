@@ -13,7 +13,7 @@ terraform {
 }
 
 locals {
-  function_names = toset([for file in fileset("${path.module}/../function/fusionables/**", "handler.js") : basename(dirname(file))])
+  function_names = toset([for file in fileset("${path.module}/../${var.use_case}/fusionables/**", "handler.js") : basename(dirname(file))])
 }
 
 provider "aws" {
@@ -65,6 +65,8 @@ resource "aws_lambda_function" "hello_world" {
   source_code_hash = data.archive_file.lambda_fusion_manager.output_base64sha256
 
   role = aws_iam_role.lambda_exec.arn
+
+  timeout = 60
 
   environment {
     variables = {
@@ -147,11 +149,7 @@ resource "aws_api_gateway_request_validator" "validator" {
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  // TODO Maybe this fixes terraform, if not please remove
-  stage_name = "onlyStage"
-
-  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root,
-  aws_api_gateway_method.sync_proxy, aws_api_gateway_method.sync_proxy_root]
+  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root, aws_api_gateway_method.sync_proxy, aws_api_gateway_method.sync_proxy_root]
 
   triggers = {
     redeployment = sha1(jsonencode(aws_api_gateway_rest_api.api.body))

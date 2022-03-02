@@ -17,9 +17,10 @@ exports.handler = async function(event, callFunction) {
             "#sd": "SensorID"
         },
         ExpressionAttributeValues: {
-            ":sid": (callingEvent["location"] + 1) + ''
+            ":sid": {N: '' + (callingEvent["location"] + 1)}
         }
     }
+    console.log("Querying with Params", params)
     let nextTemp = await ddb.query(params).promise()
 
     params = {
@@ -29,13 +30,16 @@ exports.handler = async function(event, callFunction) {
             "#sd": "SensorID"
         },
         ExpressionAttributeValues: {
-            ":sid": (callingEvent["location"] - 1) + ''
+            ":sid": {N: (callingEvent["location"] - 1) + ''}
         }
     }
+    console.log("Querying with Params", params)
     let beforeTemp = await ddb.query(params).promise()
 
     console.log("Doing some magic with nextTemp and beforeTemp", nextTemp, beforeTemp)
-    let isTooLoud = Math.random() > 0.8
+    let isTooLoud = Math.random() >= 0.4
+
+    console.log("IsTooLoud:" , isTooLoud)
 
     if (isTooLoud) {
         // Set an Alert so that something can happen. I dont know, maybe a technichan would look at the site or whatever

@@ -64,7 +64,7 @@ resource "aws_iam_role" "lambda_optimizer" {
       Version = "2012-10-17"
       Statement = [
         {
-          Action   = ["cloudwatch:*", "logs:*", "s3:*", "lambda:*"]
+          Action   = ["cloudwatch:*", "logs:*", "s3:*", "lambda:*", "kms:*"]
           Effect   = "Allow"
           Resource = "*"
         }

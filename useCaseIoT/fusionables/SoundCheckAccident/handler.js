@@ -11,7 +11,7 @@ exports.handler = async function(event, callFunction) {
 
     // TODO check cameras for accident
     await delay(1000)
-    let isAccident = Math.random() >= 0.9
+    let isAccident = Math.random() >= 0.5
 
     return {
         isAccident: isAccident

@@ -8,4 +8,4 @@ Call the functions locally or remotely depending on the current configuration.
 
 in `fusionables`, every folder that has a file called `handler.js` will be deployed as a fusionable function. The folder name can only contain alphanumerical chars as well as `_`.
 
-The fusion handler will then run ```require(`./fusionables/${functionName}/handler`)``` to import the function when necessary.
+The fusion handler will then run ```require(`./fusionables/${functionName}/handler`)``` to import the function when necessary

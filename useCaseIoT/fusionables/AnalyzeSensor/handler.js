@@ -34,7 +34,7 @@ exports.handler = async function(event, callFunction) {
     // Do some stuff based on the input - this just calls different functions randomly to emulate function-daisy-chains.
     switch (event["sensor"]) {
         case "Temperature":
-            if (event["value"] < -5 || event["value"] > 35) {
+            if (event["value"] < -1 || event["value"] > 20) {
                 // We should check if the sensor is still functioning: check if nearby sensors have reported comparable values and maybe report it as malfunctioning
                 let checkResult = await callFunction("CheckSensor", {originalEvent: event}, true)
                 if (!checkResult.valid) {
@@ -47,7 +47,7 @@ exports.handler = async function(event, callFunction) {
                 console.log("Sending Message Cold")
                 calls.push(callFunction("ActionSignage", {message: "Its below freezing!", location: event["sensorID"], chain: 1, duration: 10}, false))
             }
-            if (event["value"] > 35) {
+            if (event["value"] > 15) {
                 // Very hot - add warning signage
                 console.log("Sending Message Hot")
                 calls.push(callFunction("ActionSignage", {message: "Please remember to drink!", location: event["sensorID"], chain: 1, duration: 10}, false))
@@ -55,7 +55,7 @@ exports.handler = async function(event, callFunction) {
             break
         case "Sound":
             // If it is always loud, check if it should be quieter and reroute traffic if yes
-            if (event["value"] > 35) {
+            if (event["value"] > 20) {
 
                 let checkResult = await callFunction("CheckSensor", {originalEvent: event}, true)
                 if (!checkResult.valid) {
@@ -78,13 +78,13 @@ exports.handler = async function(event, callFunction) {
             break
         case "AirQuality":
             // If it is bad, check cameras is there is a traffic jam
-            if (event["value"] < 5) {
+            if (event["value"] < 40) {
                 console.log("Air Quality is bad - checking for accident")
-                calls.push(callFunction("DetectJam", {location: event["sensorID"]}, false))
+                calls.push(callFunction("DetectJam", {location: event["sensorID"], sieve: 1000000}, false))
             }
 
             // If it is very bad, raise an alarm
-            if (event["value"] < 1) {
+            if (event["value"] < 25) {
                 console.log("Air Quality is very bad - raising alarm")
                 calls.push(callFunction("AirQualityAlarm", {originalEvent: event}, false))
             }

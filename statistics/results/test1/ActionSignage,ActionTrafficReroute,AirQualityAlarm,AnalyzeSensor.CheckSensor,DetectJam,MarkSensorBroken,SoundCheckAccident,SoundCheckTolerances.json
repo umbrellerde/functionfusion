@@ -1,0 +1,170 @@
+[
+    {
+        "traceId": "0c42f62332a6f748",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "ActionSignage",
+        "billedDuration": 1421,
+        "maxMemoryUsed": 80,
+        "isRootInvocation": false,
+        "startTimestamp": 1646229024387,
+        "endTimestamp": 1646229025806,
+        "internalDuration": 1321,
+        "calls": [
+            {
+                "called": "ActionSignage",
+                "caller": "ActionSignage",
+                "local": true,
+                "sync": true,
+                "time": 640
+            }
+        ]
+    },
+    {
+        "traceId": "3be14c39f713012b",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "AirQualityAlarm",
+        "billedDuration": 751,
+        "maxMemoryUsed": 78,
+        "isRootInvocation": false,
+        "startTimestamp": 1646229025248,
+        "endTimestamp": 1646229025989,
+        "internalDuration": 682,
+        "calls": [
+            {
+                "called": "AirQualityAlarm",
+                "caller": "AirQualityAlarm",
+                "local": true,
+                "sync": true,
+                "time": 480
+            }
+        ]
+    },
+    {
+        "traceId": "31d70a9ba1fba21d",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "AnalyzeSensor",
+        "billedDuration": 769,
+        "maxMemoryUsed": 78,
+        "isRootInvocation": true,
+        "startTimestamp": 1646229021330,
+        "endTimestamp": 1646229022091,
+        "internalDuration": 682,
+        "calls": [
+            {
+                "called": "AnalyzeSensor",
+                "caller": "AnalyzeSensor",
+                "local": true,
+                "sync": true,
+                "time": 500
+            }
+        ]
+    },
+    {
+        "traceId": "0c42f62332a6f748",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "AnalyzeSensor",
+        "billedDuration": 846,
+        "maxMemoryUsed": 80,
+        "isRootInvocation": true,
+        "startTimestamp": 1646229022985,
+        "endTimestamp": 1646229023830,
+        "internalDuration": 834,
+        "calls": [
+            {
+                "called": "AnalyzeSensor",
+                "caller": "AnalyzeSensor",
+                "local": true,
+                "sync": true,
+                "time": 264
+            },
+            {
+                "called": "ActionSignage",
+                "caller": "AnalyzeSensor",
+                "local": false,
+                "sync": false,
+                "time": 790
+            }
+        ]
+    },
+    {
+        "traceId": "3be14c39f713012b",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "AnalyzeSensor",
+        "billedDuration": 196,
+        "maxMemoryUsed": 80,
+        "isRootInvocation": true,
+        "startTimestamp": 1646229024535,
+        "endTimestamp": 1646229024731,
+        "internalDuration": 156,
+        "calls": [
+            {
+                "called": "AnalyzeSensor",
+                "caller": "AnalyzeSensor",
+                "local": true,
+                "sync": true,
+                "time": 35
+            },
+            {
+                "called": "DetectJam",
+                "caller": "AnalyzeSensor",
+                "local": false,
+                "sync": false,
+                "time": 104
+            },
+            {
+                "called": "AirQualityAlarm",
+                "caller": "AnalyzeSensor",
+                "local": false,
+                "sync": false,
+                "time": 104
+            }
+        ]
+    },
+    {
+        "traceId": "4abf3eaf0cafe69c",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "AnalyzeSensor",
+        "billedDuration": 43,
+        "maxMemoryUsed": 80,
+        "isRootInvocation": true,
+        "startTimestamp": 1646229025409,
+        "endTimestamp": 1646229025451,
+        "internalDuration": 40,
+        "calls": [
+            {
+                "called": "AnalyzeSensor",
+                "caller": "AnalyzeSensor",
+                "local": true,
+                "sync": true,
+                "time": 2
+            }
+        ]
+    },
+    {
+        "traceId": "3be14c39f713012b",
+        "fusionGroup": "ActionSignage,ActionTrafficReroute,AirQualityAlarm,AnalyzeSensor.CheckSensor,DetectJam,MarkSensorBroken,SoundCheckAccident,SoundCheckTolerances",
+        "source": "AnalyzeSensor",
+        "currentFunction": "DetectJam",
+        "billedDuration": 1553,
+        "maxMemoryUsed": 107,
+        "isRootInvocation": false,
+        "startTimestamp": 1646229025188,
+        "endTimestamp": 1646229026729,
+        "internalDuration": 1501,
+        "calls": [
+            {
+                "called": "DetectJam",
+                "caller": "DetectJam",
+                "local": true,
+                "sync": true,
+                "time": 1501
+            }
+        ]
+    }
+]

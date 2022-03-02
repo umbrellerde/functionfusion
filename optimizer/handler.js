@@ -1,5 +1,6 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
+const { type } = require("os");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -19,15 +20,36 @@ exports.handler = async function (event) {
 
     console.log("All Setups tested", setupsTested)
 
-    let newConfiguration = iterateOnLowestLatency(setupsTested)
+    // let newConfiguration = iterateOnLowestLatency(setupsTested, false)
+    // let stillTryingNewConfigurations = true
+    // if (newConfiguration == null) {
+    //     newConfiguration = generateNewConfiguration(setupsTested)
+    //     if (newConfiguration == null) {
+    //         newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    //         stillTryingNewConfigurations = false
+    //     }
+    // }
+
+
+    // Strategy - Try to improve iteratively
+    let newConfiguration = iterateOnLowestLatency(setupsTested, true)
     let stillTryingNewConfigurations = true
     if (newConfiguration == null) {
-        newConfiguration = generateNewConfiguration(setupsTested)
-        if (newConfiguration == null) {
-            newConfiguration = getConfigurationWithLowestLatency(setupsTested)
-            stillTryingNewConfigurations = false
-        }
+        console.log("Getting Configuration with lowest Latency")
+        stillTryingNewConfigurations = false
+        newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    } else {
+        console.log("Iterate on lowest Latency found nothing to do")
     }
+
+    // Strategy - Try Everything
+    // let newConfiguration = generateNewConfiguration(setupsTested)
+    // if (newConfiguration == null) {
+    //     newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    //     stillTryingNewConfigurations = false
+    // }
+
+    console.log("Done Testing Setups. New Configuration is", newConfiguration)
 
     // Update the Env Variables of all Functions
     let promises = []
@@ -37,7 +59,7 @@ exports.handler = async function (event) {
             FunctionName: fname,
             Environment: {
                 Variables: {
-                    'FUSION_GROUPS': setupFromList(newConfiguration),
+                    'FUSION_GROUPS': newConfiguration,
                     'S3_BUCKET_NAME': bucketName,
                     'FUNCTION_TO_HANDLE': fname.split("-")[2]
                 }
@@ -53,7 +75,7 @@ exports.handler = async function (event) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { setupsTested: setupsTested, newConfiguration: newConfiguration, optimumFound: !stillTryingNewConfigurations },
+        body: { setupsTested: setupsTested, newConfiguration: listFromSetup(newConfiguration), optimumFound: !stillTryingNewConfigurations },
     }
 }
 
@@ -116,7 +138,7 @@ function generateNewConfiguration(setupsTested) {
 
     // Test for valid Result Configuration
     for (let fname of functionNames) {
-        assert(resultConfiguration.includes(fname), "The new configuration must include all function names")
+        assert(resultConfiguration.includes(fname), "The new configuration must include all function names. " + resultConfiguration + " does not include", + fname)
     }
     return resultConfiguration
 }
@@ -168,7 +190,7 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
                 // console.log("(Currently trying definite)", definiteGroups)
                 // console.log("(Current Subset)", subset)
                 if (!alreadyTested(setupFromList(newDefiniteGroups))) {
-                    console.log("!!!!!!! Found One! ", newDefiniteGroups)
+                    console.log("!!!!!!! Found Untested One! ", newDefiniteGroups)
                     return newDefiniteGroups
                 }
                 console.log("...New Group was already tested, continuing", newDefiniteGroups)
@@ -185,10 +207,10 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
         console.log("I have found nothing an i am all out of ideas")
         return null
     }
-    return tryAllCombinations([], functionNames)
+    return setupFromList(tryAllCombinations([], functionNames))
 }
 
-function iterateOnLowestLatency(setupsTested) {
+function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
     let currentMin = getConfigurationWithLowestLatency(setupsTested)
     let currentOptimalSetup = listFromSetup(currentMin)
     // change something about this configuration smartly:
@@ -202,10 +224,10 @@ function iterateOnLowestLatency(setupsTested) {
         console.log("Invocations List current tested: ", invocationsList)
         for (let invocation of invocationsList) {
             // Get all calls that do not call themselfes and are sync calls
-            let syncSet = 
+            let syncSet =
                 invocation.calls
-                .filter((call) => call["called"] !== call["caller"] && call["sync"] == true)
-                .map((call) => call["called"])
+                    .filter((call) => call["called"] !== call["caller"] && call["sync"] == true)
+                    .map((call) => call["called"])
             // Add the syncSet to the Set that contains source
             let source = invocation["currentFunction"]
             let sourceAlreadyInSubset = false
@@ -226,25 +248,117 @@ function iterateOnLowestLatency(setupsTested) {
     console.log("----- Done Setting up, now finding new optimums.")
     console.log("syncCalls", syncCalls)
     // Compare setup and syncCalls to find possible improvements
-    for (let fusionGroup of currentOptimalSetup) {
+    for (let i = 0; i < currentOptimalSetup.length; i++) {
+        let fusionGroup = currentOptimalSetup[i]
         for (let fktn of fusionGroup) {
-            let syncSet = syncCalls.filter(s => s.has(fktn))
+            console.log("Currently Trying function", fktn)
+            // Create a new Set from an Array that is filtered, the array consists of the old set. Not very fast, but ES6 has no Filter() on Sets.
+            // Get the Sync Set that has the function in it
+            let syncSet = [...syncCalls].find(s => s.has(fktn))
+
+            if (syncSet === undefined) {
+                // The function was not called, ignore it
+                console.log("Skipping uncalled function", fktn)
+                continue
+            }
             // Check if all members of syncSet are also in fusion group -> Move them togeher if not
-            for (let shouldBeSync of syncSet) {
+            console.log("Sync Set is", syncSet, "and type", typeof syncSet)
+            let syncSetAsArray = [...syncSet]
+            for (let j = 0; j < syncSetAsArray.length; j++) {
+                let shouldBeSync = syncSetAsArray[j]
+                console.log("Trying whether", shouldBeSync, "is already in fusion group", fusionGroup)
+                console.log("Shouldbesync type:", typeof shouldBeSync)
                 if (!fusionGroup.includes(shouldBeSync)) {
                     console.log("!!! Found one! FusionGroup", fusionGroup, "does not include", shouldBeSync, "!")
+                    console.log("Old Optimal Setup: ", currentOptimalSetup)
                     // Found one! shouldBeSync should be in Fusion group, but its not.
                     // Remove shouldBeSync from other fusion group
-                    currentOptimalSetup.forEach(fusionGroup => {
-                        fusionGroup = fusionGroup.filter(item => item !== shouldBeSync)
-                    })
+                    for (let k = 0; k < currentOptimalSetup.length; k++) {
+                        // Get the fusion group without the Item to be removed
+                        let newGroup = currentOptimalSetup[k].filter(item => item !== shouldBeSync)
+                        console.log("Current Group", currentOptimalSetup[k], "filtered down to", newGroup)
+                        if (newGroup.length == 0) {
+                            console.log("...Removing it")
+                            // The group without the item is empty==> Remote it fully
+                            // The Fusion Group is gone now, remove this element
+                            currentOptimalSetup.splice(k, 1)
+                        } else {
+                            currentOptimalSetup[k] = newGroup
+                        }
+                    }
                     // Add to current fusion group
-                    fusionGroup.push(shouldBeSync)
-                    return fusionGroup
+                    currentOptimalSetup[i].push(shouldBeSync)
+                    console.log("New Optimal Setup: ", currentOptimalSetup)
+
+                    // Was this setup already tested?
+                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
+
+                    if (alreadyTested) {
+                        // The iteration on the current lowest latency was already tested...
+                        console.log("New Optimum has already been tested...")
+
+                        if (nullIfAlreadyTested) {
+                            return null
+                        }
+
+                        continue
+                    }
+
+                    return setupFromList(currentOptimalSetup)
+                } else {
+                    console.log("...It is already...")
+                }
+            }
+            //----------------------------------------------
+            // Done merging stuff to make it faster
+            // Now: Try to move stuff that is async in different functions.
+            let notSyncSet = [...syncCalls].find(s => !s.has(fktn))
+            console.log("Not Sync Set is", notSyncSet)
+            let notSyncSetAsArray = [...notSyncSet]
+            for (let j = 0; j < notSyncSetAsArray.length; j++) {
+                let shouldNotBeSync = notSyncSetAsArray[j]
+                console.log("Trying whether", shouldNotBeSync, "is wrongly in fusion group", fusionGroup)
+                if (fusionGroup.includes(shouldNotBeSync)) {
+                    console.log("!!! Found one! FusionGroup", fusionGroup, "includes", shouldNotBeSync, ", but shouldn't!")
+                    console.log("Old Optimal Setup: ", currentOptimalSetup)
+                    // Found one! shouldNotBeSync should NOT be in Fusion group, but it is.
+                    // Remote shouldNotBeSync from the fusion group
+                    for (let k = 0; k < currentOptimalSetup.length; k++) {
+                        let newGroup = currentOptimalSetup[k].filter(item => item !== shouldNotBeSync)
+                        if (newGroup.length == 0) {
+                            // The Fusion Group is gone now, remove this element
+                            currentOptimalSetup[k].splice(index, 1)
+                        } else {
+                            currentOptimalSetup[k] = newGroup
+                        }
+                    }
+                    // Add to a new fusion group with this member
+                    currentOptimalSetup.push([shouldNotBeSync])
+                    console.log("New Optimal Setup: ", currentOptimalSetup)
+
+                    // Was this setup already tested?
+                    setupFromList
+                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
+
+                    if (alreadyTested) {
+                        // The iteration on the current lowest latency was already tested...
+                        console.log("New Optimum has already been tested...")
+
+                        if (nullIfAlreadyTested) {
+                            return null
+                        }
+
+                        continue
+                    }
+
+                    return setupFromList(currentOptimalSetup)
+                } else {
+                    console.log("...It is already...")
                 }
             }
         }
     }
+    console.log("Cannot find anything to improve")
     // There is nothing that can be fused from the current function
     return null
 }

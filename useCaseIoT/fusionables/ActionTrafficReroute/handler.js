@@ -19,7 +19,7 @@ exports.handler = async function(event, callFunction) {
         let params = {
             TableName: "UseCaseTable",
             Item : {
-                'SensorID': {N: currId + ''},
+                'SensorID': {N: i + ''},
                 'Message': {S: JSON.stringify(event)}
             }
         }

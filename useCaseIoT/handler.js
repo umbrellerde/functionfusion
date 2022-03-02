@@ -8,7 +8,7 @@ let basePath = ""
 let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
 let fusionGroups = getFusionGroupsFromEnv()
-let currentTraceId = ""
+let currentTraceId = null
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -17,17 +17,21 @@ exports.handler = async function (event) {
     let input = getInputFromEvent(event)
 
     let firstStepInChain = false
+
+    // If the traceId is generated here set firstStep to true
     if (!input.hasOwnProperty('traceId')) {
         let traceId = generateTraceId()
         input['traceId'] = traceId
         currentTraceId = traceId
         firstStepInChain = true
-        
+    } else {
+        // Necessary if this (non-root) Function calls another function
+        currentTraceId = input['traceId']
     }
     console.log("TraceId", input['traceId'])
     console.log("FirstStep", firstStepInChain)
 
-    // Invoke the function with await because execution stops when this function returns
+    // Invoke the function with await be cause execution stops when this function returns
     let timeBase = Date.now()
     let result = await invokeLocal(functionToHandle, input, true)
     console.log("time-base", Date.now() - timeBase)
