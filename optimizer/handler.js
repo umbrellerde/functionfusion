@@ -1,6 +1,7 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
 const { type } = require("os");
+const { monitorEventLoopDelay } = require("perf_hooks");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -15,13 +16,45 @@ const listFromSetup = (setup) => setup.split(",").map(g => g.split("."))
 
 exports.handler = async function (event) {
 
+    let deleteStartInvocations = event["deleteSeconds"]
+
     // Get all .json Files from S3 ==> All Existing Fusion Setups
     let setupsTested = await getAllSetups()
 
+    // TODO is this an OK thing to do?
+    // Delete the first three minutes of invocations
+
+    if (deleteStartInvocations > 0) {
+        let minTime = 2082668400000 // This is just here on purpose so that the code breaks in 2036
+        for (let key of Object.keys(setupsTested)) {
+            for (let i = 0; i < setupsTested[key].length; i++) {
+                if (parseInt(setupsTested[key][i]["startTimestamp"]) < minTime) {
+                    minTime = parseInt(setupsTested[key][i]["startTimestamp"])
+                }
+            }
+        }
+        console.log("Minimum found time: ", minTime)
+        // Min allowed time is three minutes after the first invocation.
+        let minAllowedTime = minTime + deleteStartInvocations * 1000
+        console.log("Minimum allowed time: ", minAllowedTime)
+        let deleted = 0
+        for (let key of Object.keys(setupsTested)) {
+            for (let i = 0; i < setupsTested[key].length; i++) {
+                if (parseInt(setupsTested[key][i]["startTimestamp"]) < minAllowedTime) {
+                    setupsTested[key].splice(i, 1)
+                    deleted++
+                }
+            }
+        }
+        console.log("Deleted Elements:", deleted)
+    }
+
     console.log("All Setups tested", setupsTested)
 
+    let stillTryingNewConfigurations = true
+
     // let newConfiguration = iterateOnLowestLatency(setupsTested, false)
-    // let stillTryingNewConfigurations = true
+    // 
     // if (newConfiguration == null) {
     //     newConfiguration = generateNewConfiguration(setupsTested)
     //     if (newConfiguration == null) {
@@ -32,8 +65,8 @@ exports.handler = async function (event) {
 
 
     // Strategy - Try to improve iteratively
-    let newConfiguration = iterateOnLowestLatency(setupsTested, true)
-    let stillTryingNewConfigurations = true
+    let newConfiguration = iterateOnLowestLatency(setupsTested, false)
+
     if (newConfiguration == null) {
         console.log("Getting Configuration with lowest Latency")
         stillTryingNewConfigurations = false
@@ -80,21 +113,36 @@ exports.handler = async function (event) {
 }
 
 function getConfigurationWithLowestLatency(setupsTested) {
-    // Iterate over all Keys, get their content. Iterate over the Content and calculate the average billedDuration
-    let averages = {}
-    for (let key of Object.keys(setupsTested)) {
-        let sumDuration = 0;
-        for (let i = 0; i < setupsTested[key].length; i++) {
-            sumDuration += setupsTested[key][i]["billedDuration"]
-        }
-        averages[key] = sumDuration / setupsTested[key].length
+    // Iterate over all Keys, get their content. Iterate over the Content and calculate the median billedDuration
+
+    function median(values) {
+        if (values.length === 0) throw new Error("No inputs");
+
+        values.sort(function (a, b) {
+            return a - b;
+        });
+
+        var half = Math.floor(values.length / 2);
+
+        if (values.length % 2)
+            return values[half];
+
+        return (values[half - 1] + values[half]) / 2.0;
     }
 
+    let medians = {}
+    for (let key of Object.keys(setupsTested)) {
+        medians[key] = median(setupsTested[key].map(inv => inv["billedDuration"]))
+    }
+
+    // medians["A.B.C"] = 25, etc...
+
+
     let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
-    for (let key of Object.keys(averages)) {
-        if (averages[key] < minValue) {
+    for (let key of Object.keys(medians)) {
+        if (medians[key] < minValue) {
             minKey = key
-            minValue = averages[key]
+            minValue = medians[key]
         }
     }
     return minKey
@@ -225,14 +273,14 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
         for (let invocation of invocationsList) {
             // Get all calls that do not call themselfes and are sync calls
             let syncSet =
-                invocation.calls
+                invocation["calls"]
                     .filter((call) => call["called"] !== call["caller"] && call["sync"] == true)
                     .map((call) => call["called"])
             // Add the syncSet to the Set that contains source
             let source = invocation["currentFunction"]
             let sourceAlreadyInSubset = false
             for (let subset of syncCalls) {
-                console.log("Sync calls subset: ", subset, "testing for", invocation)
+                // console.log("Sync calls subset: ", subset, "testing for", invocation)
                 if (subset.has(source)) {
                     syncSet.forEach(elem => subset.add(elem))
                     sourceAlreadyInSubset = true
@@ -240,8 +288,27 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
                 }
             }
             if (!sourceAlreadyInSubset) {
+                console.log("Created a new SyncSet")
                 syncSet.push(source)
                 syncCalls.add(new Set(syncSet))
+            }
+            // Also add all async called functions to their own syncset
+            // These are all the functions called that are async
+            let asyncSet = invocation["calls"]
+                .filter((call) => call["called"] !== call["caller"] && call["sync"] == false)
+                .map((call) => call["called"])
+            // Check if they alre already in a subset
+            for (let asyncFunction of asyncSet) {
+                let functionExists = false
+                for (let subset of syncCalls) {
+                    if (subset.has(asyncFunction)) {
+                        functionExists = true
+                        break
+                    }
+                }
+                if (!functionExists) {
+                    syncCalls.add(new Set([asyncFunction]))
+                }
             }
         }
     }
@@ -337,7 +404,6 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
                     console.log("New Optimal Setup: ", currentOptimalSetup)
 
                     // Was this setup already tested?
-                    setupFromList
                     let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
 
                     if (alreadyTested) {
