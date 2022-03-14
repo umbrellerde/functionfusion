@@ -5,19 +5,16 @@ const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async function (event, callFunction) {
     console.log("Event for B:", event)
-    let calls = []
     let checked = []
 
-    //eratosthenes(500_000)
     checked.push(await callFunction("D", { test: "event" }, true))
-    let results = await Promise.all(calls)
 
     await new Promise(resolve => setTimeout(resolve, 800))
 
-    console.log("Results are", results)
     console.log("Checked are", checked)
     return {
-        results: results,
+        from: "B",
+        input: event,
         checked: checked
     }
 }

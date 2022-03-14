@@ -176,7 +176,7 @@ function callFunction(name, input, sync) {
 function generateTraceId() {
     // Elements within a group are joined by ".", between fusion groups there is a ","
     let fusionSetupPart = fusionGroups.map(e => e.join(".")).join(",")
-    let randomTracePart = crypto.randomBytes(8).toString("hex")
+    let randomTracePart = crypto.randomUUID({disableEntropyCache:true}).replaceAll("-", "")
 
     return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
 }

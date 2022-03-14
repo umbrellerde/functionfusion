@@ -68,8 +68,6 @@ async function saveInvocationsToS3(invocations) {
             console.log("Existing Keys before Rewrite:", existingTraces)
             let tracesList = []
             for (const [key, value] of Object.entries(existingTraces)) {
-                console.log("Rewriting Key", key)
-                console.log("Rewriting Value", value)
                 tracesList.push(value)
             }
             existingTraces = tracesList
@@ -78,7 +76,60 @@ async function saveInvocationsToS3(invocations) {
         console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
         // Merge together
         // TODO Make it a Set and then export the set to a list
-        let mergedTraces = [...new Set([...existingTraces, ...newTraces])] //Object.assign(existingTraces, newTraces)
+        // TODO Better Merge the Old and New Traces
+        // --- for every new Trace: Find all Invocations with same Trace Id. Find all Invocations with same currentFunction.
+        // ------ For every call of newTraces: filter existingTraces for call with same properties. If it does not exist, add it here.
+        // {
+        // "traceId": "e2459202fd57f0ae",
+        // "fusionGroup": "A.B.C.D.E.F.G",
+        // "source": "A",
+        // "currentFunction": "A",
+        // "billedDuration": 3575,
+        // "maxMemoryUsed": 118,
+        // "isRootInvocation": true,
+        // "startTimestamp": 1647273039359,
+        // "endTimestamp": 1647273042932,
+        // "internalDuration": 3572,
+        // "calls": [
+        //     {
+        //         "called": "F",
+        //         "caller": "A",
+        //         "local": true,
+        //         "sync": false,
+        //         "time": 212
+        //     }
+        // Old:
+        //let mergedTraces = [...new Set([...existingTraces, ...newTraces])] //Object.assign(existingTraces, newTraces)
+
+        for (let i = 0; i < newTraces.length; i++) {
+            let currNew = newTraces[i]
+            let found = false
+            for (let j=0; j < existingTraces.length; j++) {
+                let currExisting = existingTraces[j]
+                if (currNew["traceId"] === currExisting["traceId"] && currNew["currentFunction"] === currExisting["currentFunction"] && currNew["startTimestamp"] === currExisting["startTimestamp"]) {
+                    found = true
+                    // Here: new and existing are the same function invocation
+                    if (currNew["calls"].length == currExisting["calls"].length) {
+                        // currExisting is up to date, skip to next currExisting
+                        break
+                    } else {
+                        // Merge calls of currNew into calls of currExisting
+                        for (let possibleNewCall of currExisting["calls"]) {
+                            if (!currNew["calls"].some(o => o["called"] === possibleNewCall["called"] && o["time"] === possibleNewCall["time"])) {
+                                // Call does not already exist!
+                                existingTraces[j]["calls"].push(possibleNewCall)
+                            }
+                        }
+                        // There are now up to date --> Break out of loop
+                        break
+                    }
+                }
+            }
+            if (!found) {
+                existingTraces.push(currNew)
+            }
+        }
+
         console.log("Type of Merged Traces is", typeof mergedTraces)
         // Save to S3
         let promise = uploadToBucket(bucketName, `${key}.json`, mergedTraces)

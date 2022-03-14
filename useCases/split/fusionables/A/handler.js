@@ -16,6 +16,8 @@ exports.handler = async function (event, callFunction) {
     console.log("Results are", results)
     console.log("Checked are", checked)
     return {
+        from: "A",
+        traceId: event["traceId"],
         results: results,
         checked: checked
     }
