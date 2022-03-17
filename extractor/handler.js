@@ -11,6 +11,7 @@ const bucketName = process.env["S3_BUCKET_NAME"]
 const logGroupNames = process.env["LOG_GROUP_NAMES"].split(",")
 
 exports.handler = async function (event) {
+    console.log("Starting Extractor")
     let allInvocations = []
 
     for (let i = 0; i < logGroupNames.length; i++) {
@@ -103,6 +104,7 @@ async function saveInvocationsToS3(invocations) {
 
         for (let i = 0; i < newTraces.length; i++) {
             let currNew = newTraces[i]
+            console.log("Checking new Trace", currNew)
             let found = false
             for (let j=0; j < existingTraces.length; j++) {
                 let currExisting = existingTraces[j]
@@ -111,8 +113,10 @@ async function saveInvocationsToS3(invocations) {
                     // Here: new and existing are the same function invocation
                     if (currNew["calls"].length == currExisting["calls"].length) {
                         // currExisting is up to date, skip to next currExisting
+                        console.log("currNew and currExisting are the same", currNew, currExisting)
                         break
                     } else {
+                        console.log("Merging new and Existing calls into each other", currNew, currExisting)
                         // Merge calls of currNew into calls of currExisting
                         for (let possibleNewCall of currExisting["calls"]) {
                             if (!currNew["calls"].some(o => o["called"] === possibleNewCall["called"] && o["time"] === possibleNewCall["time"])) {
@@ -126,9 +130,11 @@ async function saveInvocationsToS3(invocations) {
                 }
             }
             if (!found) {
+                console.log("Pushing new onto List:", currNew)
                 existingTraces.push(currNew)
             }
         }
+        let mergedTraces = existingTraces
 
         console.log("Type of Merged Traces is", typeof mergedTraces)
         // Save to S3
@@ -144,14 +150,20 @@ async function saveInvocationsToS3(invocations) {
  * @param {string} logGroupName 
  */
 async function getInvocationsFromLogGroup(logGroupName) {
-    let startTime = Date.now() - 900_000 // TODO get from dynamodb
+    let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
     let endTime = Date.now()
 
     const allLogStreamsInput = {
         logGroupName: logGroupName,
     }
 
-    const allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
+    let allLogStreams = null
+    try {
+        allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
+    } catch (error) {
+        console.error("describeLogStreams failed with ", error)
+        throw error
+    }
 
     let invocations = []
 
@@ -164,7 +176,13 @@ async function getInvocationsFromLogGroup(logGroupName) {
             logGroupName: logGroupName,
             logStreamName: stream["logStreamName"],
         }
-        const logEvents = await cw.getLogEvents(params).promise()
+        let logEvents = null
+        try {
+            logEvents = await cw.getLogEvents(params).promise()
+        } catch (error) {
+            console.error("getLogEvents failed with ", error)
+            throw error
+        }
 
         let startI = 0
         for (let i = 0; i < logEvents["events"].length; i++) {

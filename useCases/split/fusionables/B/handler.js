@@ -9,7 +9,7 @@ exports.handler = async function (event, callFunction) {
 
     checked.push(await callFunction("D", { test: "event" }, true))
 
-    await new Promise(resolve => setTimeout(resolve, 800))
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     console.log("Checked are", checked)
     return {

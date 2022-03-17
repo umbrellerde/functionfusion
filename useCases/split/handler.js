@@ -149,6 +149,7 @@ function getHandler(resource) {
     if (handlers[resource]) {
         return handlers[resource]
     }
+    // TODO the reqiore os cached by node
     handlers[resource] = require(`./fusionables/${resource}/handler`)
     return handlers[resource]
 }
@@ -183,7 +184,7 @@ function callFunction(name, input, sync) {
 function generateTraceId() {
     // Elements within a group are joined by ".", between fusion groups there is a ","
     let fusionSetupPart = fusionGroups.map(e => e.join(".")).join(",")
-    let randomTracePart = crypto.randomBytes(8).toString("hex")
+    let randomTracePart = crypto.randomBytes(32).toString("hex")
 
     return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
 }

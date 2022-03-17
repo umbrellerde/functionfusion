@@ -5,7 +5,7 @@ const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async function (event, callFunction) {
     console.log("Event for E:", event)
-    await new Promise(resolve => setTimeout(resolve, 800))
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     return {
         from: "E"
