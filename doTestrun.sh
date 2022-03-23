@@ -12,35 +12,36 @@ terraform apply -auto-approve
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
-default_count=200
-default_iterations=5
+default_count=3
+default_iterations=3
 
 echo "Base URL is $base_url"
 
-start_date="$(date +%s)"
-end_date=$((start_date + 30))
-echo "Warming up from $start_date to $end_date"
+# start_date="$(date +%s)"
+# end_date=$((start_date + 60))
+# echo "Warming up from $start_date to $end_date"
 
-curr_date="$(date +%s)"
-while [ $curr_date -le $end_date ]; do
-    curl -X POST "$base_url/A" -H 'Content-Type: application/json' -d '{"test": "event"}'
-    sleep 1
-    echo "."
-    curr_date="$(date +%s)"
-done
+# curr_date="$(date +%s)"
+# while [ $curr_date -le $end_date ]; do
+#     curl -X POST "$base_url/A" -H 'Content-Type: application/json' -d '{"test": "event"}'
+#     sleep 10
+#     echo "."
+#     curr_date="$(date +%s)"
+# done
 
-echo "-------------- Done Warming up, now for the optimizations ------------------"
+# echo "-------------- Done Warming up, now for the optimizations ------------------"
 
 for ((iteration=0; iteration<default_iterations; iteration++)) do
     printf "\nRun $iteration"
     for ((run=0; run<default_count; run++)) do
         printf "\n...$run "
+        aws lambda invoke --function-name coldstarts /dev/null
         curl -X POST "$base_url/A" -H 'Content-Type: application/json' -d '{"test": "event"}'
-        sleep 0.5
+        sleep 5
     done
-    printf "\nExtracting & Optimizing...\n"
+    printf "\nExtracting & Optimizing & Coldifying...\n"
     #(aws lambda invoke --function-name extractor /dev/null && aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null) &
-    sleep 5
+    #sleep 5
     aws lambda invoke --function-name extractor /dev/null
     aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null
     printf "\nDone...\n"

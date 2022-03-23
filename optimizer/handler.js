@@ -1,7 +1,5 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
-const { type } = require("os");
-const { monitorEventLoopDelay } = require("perf_hooks");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -64,16 +62,28 @@ exports.handler = async function (event) {
     // }
 
 
-    // Strategy - Try to improve iteratively
-    let newConfiguration = iterateOnLowestLatency(setupsTested, false)
+    // Strategy - Try to improve iteratively on median latency
+    // let newConfiguration = iterateOnLowestLatency(setupsTested, false)
+
+    // if (newConfiguration == null) {
+    //     console.log("Getting Configuration with lowest Latency")
+    //     stillTryingNewConfigurations = false
+    //     newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    // } else {
+    //     console.log("Iterate on lowest Latency found nothing to do")
+    // }
+
+    // Strategy - Try to improve iteratively on p99 latency
+    let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestColdStartLatency)
 
     if (newConfiguration == null) {
         console.log("Getting Configuration with lowest Latency")
         stillTryingNewConfigurations = false
-        newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+        newConfiguration = getConfigurationWithLowestColdStartLatency(setupsTested)
     } else {
         console.log("Iterate on lowest Latency found nothing to do")
     }
+
 
     // Strategy - Try Everything
     // let newConfiguration = generateNewConfiguration(setupsTested)
@@ -110,6 +120,36 @@ exports.handler = async function (event) {
         },
         body: { setupsTested: setupsTested, newConfiguration: listFromSetup(newConfiguration), optimumFound: !stillTryingNewConfigurations },
     }
+}
+
+function getConfigurationWithLowestColdStartLatency(setupsTested) {
+    function getp99(values) {
+        if (values.length === 0) throw new Error("No inputs");
+
+        values.sort(function (a, b) {
+            return a - b;
+        });
+
+        var cutoff = Math.floor(values.length *0.99);
+        return values[cutoff];
+    }
+
+    let p99 = {}
+    for (let key of Object.keys(setupsTested)) {
+        p99[key] = getp99(setupsTested[key].map(inv => inv["billedDuration"]))
+    }
+
+    // medians["A.B.C"] = 25, etc...
+
+
+    let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
+    for (let key of Object.keys(p99)) {
+        if (p99[key] < minValue) {
+            minKey = key
+            minValue = p99[key]
+        }
+    }
+    return minKey
 }
 
 function getConfigurationWithLowestLatency(setupsTested) {
@@ -258,8 +298,8 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
     return setupFromList(tryAllCombinations([], functionNames))
 }
 
-function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
-    let currentMin = getConfigurationWithLowestLatency(setupsTested)
+function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested, functionToFindBase = getConfigurationWithLowestLatency) {
+    let currentMin = functionToFindBase(setupsTested)
     let currentOptimalSetup = listFromSetup(currentMin)
     // change something about this configuration smartly:
     // - Check if there are sync calls to functions that are not fused yet.
@@ -394,7 +434,8 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested) {
                         let newGroup = currentOptimalSetup[k].filter(item => item !== shouldNotBeSync)
                         if (newGroup.length == 0) {
                             // The Fusion Group is gone now, remove this element
-                            currentOptimalSetup[k].splice(index, 1)
+                            currentOptimalSetup.splice(k, 1)
+                            k-- // Do the group with the new index k again. k++ of for loop will increase it, so subtract one here.
                         } else {
                             currentOptimalSetup[k] = newGroup
                         }
