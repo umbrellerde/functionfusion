@@ -18,12 +18,12 @@ exports.handler = async function (event) {
             console.log("Error is:", err)
             await new Promise(resolve => setTimeout(resolve, timeout))
             run++
-            timeout = timeout * 1.5
+            timeout = timeout * 2
         }
         if (results != null) {
             break;
         }
-        if (run > 10) {
+        if (run > 0) { // TODO change to 10
             return {
                 statusCode: 500,
                 headers: {
@@ -46,21 +46,32 @@ exports.handler = async function (event) {
 
 async function createColdStarts() {
     // Update the Env Variables of all Functions
-    let promises = []
+    let results = []
     // fname=fusion-function-A ==> Function to handle is part after last "-"
     let date = new Date()
     console.log("Updating Functions for Cold Starts...")
     for (let fname of functionLogGroupNames) {
+
+        // Read Env of Functions
+        let existing = await lambda.getFunction({
+            FunctionName: fname
+        }).promise()
+
+        console.log("Existing is", existing)
+
+        let existingVars = existing["Configuration"]["Environment"]["Variables"]
+
+        existingVars["FORCE_COLD_START"] = date.toISOString()
+
+        // Merge new FORCE_COLD_START variable
+        console.log("Updating Function", fname)
         let promise = lambda.updateFunctionConfiguration({
             FunctionName: fname,
             Environment: {
-                Variables: {
-                    'FORCE_COLD_START': date.toISOString()
-                }
+                Variables: existingVars
             }
         }).promise()
-        promises.push(promise)
+        results.push(await promise)
     }
-
-    let results = await Promise.all(promises)
+    return results
 }

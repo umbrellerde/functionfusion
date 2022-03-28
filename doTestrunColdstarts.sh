@@ -12,11 +12,8 @@ terraform apply -auto-approve --parallelism=4
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
-# How many Fusion Groups to try?
-default_iterations=12
-# How many invocations per fusion group?
-default_count=30
-# Note: remember to change optimization function in optimizer
+default_count=20
+default_iterations=13
 
 echo "Base URL is $base_url"
 
@@ -38,15 +35,15 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     printf "\nRun $iteration"
     for ((run=0; run<default_count; run++)) do
         printf "\n...$run "
-        # aws lambda invoke --function-name coldstarts /dev/null
-        curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}' &
-        sleep 1
+        aws lambda invoke --function-name coldstarts /dev/null
+        curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}'
+        sleep 5
     done
-    printf "\nExtracting & Optimizing...\n"
+    printf "\nExtracting & Optimizing & Coldifying...\n"
     #(aws lambda invoke --function-name extractor /dev/null && aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null) &
-    sleep 10
+    #sleep 5
+    awsume trever
     aws lambda invoke --function-name extractor /dev/null
-    sleep 3
     aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null
     printf "\nDone...\n"
 done
@@ -54,6 +51,7 @@ done
 printf "Sleeping 30s to let CloudWatch catch up\n"
 sleep 30
 printf "\nExtracting...\n"
+awsume trever
 aws lambda invoke --function-name extractor /dev/null
 
 echo "Getting Results!"

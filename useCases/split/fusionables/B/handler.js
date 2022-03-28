@@ -11,7 +11,7 @@ exports.handler = async function (event, callFunction) {
 
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    console.log("Checked are", checked)
+    console.log("B: Checked are", checked)
     return {
         from: "B",
         input: event,

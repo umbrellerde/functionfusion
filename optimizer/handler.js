@@ -51,6 +51,7 @@ exports.handler = async function (event) {
 
     let stillTryingNewConfigurations = true
 
+    // Old Stragety - Try to improve iterativeky on median latency, try a new configuration if this fails
     // let newConfiguration = iterateOnLowestLatency(setupsTested, false)
     // 
     // if (newConfiguration == null) {
@@ -62,27 +63,27 @@ exports.handler = async function (event) {
     // }
 
 
-    // Strategy - Try to improve iteratively on median latency
-    // let newConfiguration = iterateOnLowestLatency(setupsTested, false)
+    // Strategy - Try to improve iteratively on median latency, try a new configuration otherwise
+    let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestLatency)
+
+    if (newConfiguration == null) {
+        console.log("Getting an untested configuration")
+        stillTryingNewConfigurations = false
+        newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    } else {
+        console.log("Iterate on lowest Latency found something to do")
+    }
+
+    // Strategy - Try to improve iteratively on p99 latency
+    // let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestColdStartLatency)
 
     // if (newConfiguration == null) {
     //     console.log("Getting Configuration with lowest Latency")
     //     stillTryingNewConfigurations = false
-    //     newConfiguration = getConfigurationWithLowestLatency(setupsTested)
+    //     newConfiguration = getConfigurationWithLowestColdStartLatency(setupsTested)
     // } else {
-    //     console.log("Iterate on lowest Latency found nothing to do")
+    //     console.log("Iterate on lowest Latency found something to do")
     // }
-
-    // Strategy - Try to improve iteratively on p99 latency
-    let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestColdStartLatency)
-
-    if (newConfiguration == null) {
-        console.log("Getting Configuration with lowest Latency")
-        stillTryingNewConfigurations = false
-        newConfiguration = getConfigurationWithLowestColdStartLatency(setupsTested)
-    } else {
-        console.log("Iterate on lowest Latency found nothing to do")
-    }
 
 
     // Strategy - Try Everything
@@ -122,6 +123,7 @@ exports.handler = async function (event) {
     }
 }
 
+// TODO Request Response Latency or Billed Duration???
 function getConfigurationWithLowestColdStartLatency(setupsTested) {
     function getp99(values) {
         if (values.length === 0) throw new Error("No inputs");
@@ -298,60 +300,79 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
     return setupFromList(tryAllCombinations([], functionNames))
 }
 
-function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested, functionToFindBase = getConfigurationWithLowestLatency) {
+const pairs = (arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat();
+function getConfigurationWithLowestLatency(setupsTested) {
+    // Iterate over all Keys, get their content. Iterate over the Content and calculate the median billedDuration
+
+    function median(values) {
+        if (values.length === 0) throw new Error("No inputs");
+
+        values.sort(function (a, b) {
+            return a - b;
+        });
+
+        var half = Math.floor(values.length / 2);
+
+        if (values.length % 2)
+            return values[half];
+
+        return (values[half - 1] + values[half]) / 2.0;
+    }
+
+    let medians = {}
+    for (let key of Object.keys(setupsTested)) {
+        medians[key] = median(setupsTested[key].map(inv => inv["billedDuration"]))
+    }
+
+    // medians["A.B.C"] = 25, etc...
+
+
+    let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
+    for (let key of Object.keys(medians)) {
+        if (medians[key] < minValue) {
+            minKey = key
+            minValue = medians[key]
+        }
+    }
+    return minKey
+}
+
+function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, functionToFindBase = getConfigurationWithLowestLatency) {
     let currentMin = functionToFindBase(setupsTested)
     let currentOptimalSetup = listFromSetup(currentMin)
+    console.log("Current Optimal Setup is:", currentOptimalSetup)
     // change something about this configuration smartly:
     // - Check if there are sync calls to functions that are not fused yet.
     // - Change a SINGLE thing about the configuration and try it out.
 
-    // Get a Set of Sets where every inside list are all the functions that sync-call each other
+    // Get a Set of Sets where every inside set are all the functions that sync-call each other
     let syncCalls = new Set()
+    // Initialize the Set so that initially every function is inside its own syncSet
+    let functionNames = functionLogGroupNames.map(fn => fn.split("-")[2])
+    functionNames.forEach(fname => syncCalls.add(new Set(fname)))
+
+    // Go over all Invocations and merge the sets that call each other
     for (let key of Object.keys(setupsTested)) {
         let invocationsList = setupsTested[key]
-        console.log("Invocations List current tested: ", invocationsList)
         for (let invocation of invocationsList) {
-            // Get all calls that do not call themselfes and are sync calls
-            let syncSet =
-                invocation["calls"]
-                    .filter((call) => call["called"] !== call["caller"] && call["sync"] == true)
-                    .map((call) => call["called"])
-            // Add the syncSet to the Set that contains source
-            let source = invocation["currentFunction"]
-            let sourceAlreadyInSubset = false
-            for (let subset of syncCalls) {
-                // console.log("Sync calls subset: ", subset, "testing for", invocation)
-                if (subset.has(source)) {
-                    syncSet.forEach(elem => subset.add(elem))
-                    sourceAlreadyInSubset = true
-                    break
-                }
-            }
-            if (!sourceAlreadyInSubset) {
-                console.log("Created a new SyncSet")
-                syncSet.push(source)
-                syncCalls.add(new Set(syncSet))
-            }
-            // Also add all async called functions to their own syncset
-            // These are all the functions called that are async
-            let asyncSet = invocation["calls"]
-                .filter((call) => call["called"] !== call["caller"] && call["sync"] == false)
+            // This is a List of Functions that should be in the same fusion group
+            let syncCallsList = invocation["calls"]
+                .filter((call) => call["sync"] == true)
                 .map((call) => call["called"])
-            // Check if they alre already in a subset
-            for (let asyncFunction of asyncSet) {
-                let functionExists = false
-                for (let subset of syncCalls) {
-                    if (subset.has(asyncFunction)) {
-                        functionExists = true
-                        break
-                    }
+            // Go over every pair of sync calls and check if they are already in the same sync set
+            pairs(syncCallsList).forEach(pair => {
+                // pair[0] and pair[1] are the functions that should be together
+                let firstSet = [...syncCalls].find(set => set.has(pair[0]))
+                let alreadySync = firstSet.has(pair[1])
+                if (!alreadySync) {
+                    let secondSet = [...syncCalls].find(set => set.has(pair[1]))
+                    syncCalls.delete(secondSet);
+                    [...secondSet].forEach(item => firstSet.add(item))
                 }
-                if (!functionExists) {
-                    syncCalls.add(new Set([asyncFunction]))
-                }
-            }
+            })
         }
     }
+
     console.log("----- Done Setting up, now finding new optimums.")
     console.log("syncCalls", syncCalls)
     // Compare setup and syncCalls to find possible improvements
@@ -359,17 +380,51 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested, functionToFin
         let fusionGroup = currentOptimalSetup[i]
         for (let fktn of fusionGroup) {
             console.log("Currently Trying function", fktn)
+
+            //----------------------------------------------
+            // Check if there are any functions that are in a sync set with a function that does not get called at all.
+            console.log("Trying to find a function that is not called at all but in the same fusion group as", fktn)
+            let fktnGroup = currentOptimalSetup.find(it => it.includes(fktn))
+            console.log("Function Group is", fktnGroup)
+            let fktnSyncSet = [...syncCalls].find(it => it.has(fktn))
+            console.log("Function Sync Set is", fktnSyncSet)
+
+            for (let j = fktnGroup.length - 1; j >= 0; j--) {
+                let fktnInGroup = fktnGroup[j]
+                if (!fktnSyncSet.has(fktnInGroup)) {
+                    console.log(fktnInGroup, "should not be in the same fusionGroup as", fktn)
+                    let i = currentOptimalSetup.findIndex(it => it.includes(fktn))
+                    let newSetup = [...currentOptimalSetup]
+                    newSetup[i] = fktnGroup.filter(item => item !== fktnInGroup)
+                    newSetup.push([fktnInGroup])
+                    console.log("new Optimal Setup", setupFromList(newSetup))
+
+                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(newSetup))
+                    if (nullIfAlreadyTested && alreadyTested) {
+                        console.log("Returning Null because it has already been tested")
+                        return null
+
+                    }
+
+                    if (!alreadyTested) {
+                        return setupFromList(newSetup)
+                    } else {
+                        console.log("...was already")
+                    }
+                } else {
+                    console.log("Function Sync Set contains function", fktnInGroup)
+                }
+            }
+
+            // -------------------------------------
             // Create a new Set from an Array that is filtered, the array consists of the old set. Not very fast, but ES6 has no Filter() on Sets.
             // Get the Sync Set that has the function in it
             let syncSet = [...syncCalls].find(s => s.has(fktn))
-
             if (syncSet === undefined) {
                 // The function was not called, ignore it
                 console.log("Skipping uncalled function", fktn)
                 continue
             }
-            // Check if all members of syncSet are also in fusion group -> Move them togeher if not
-            console.log("Sync Set is", syncSet, "and type", typeof syncSet)
             let syncSetAsArray = [...syncSet]
             for (let j = 0; j < syncSetAsArray.length; j++) {
                 let shouldBeSync = syncSetAsArray[j]
@@ -452,6 +507,7 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested, functionToFin
                         console.log("New Optimum has already been tested...")
 
                         if (nullIfAlreadyTested) {
+                            console.log("Returning Null because it has already been tested")
                             return null
                         }
 
@@ -469,7 +525,6 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested, functionToFin
     // There is nothing that can be fused from the current function
     return null
 }
-
 
 /**
  * 

@@ -149,7 +149,7 @@ function getHandler(resource) {
     if (handlers[resource]) {
         return handlers[resource]
     }
-    // TODO the reqiore os cached by node
+    // TODO the reqiore os is cached by node - should not be necessary to cache it?
     handlers[resource] = require(`./fusionables/${resource}/handler`)
     return handlers[resource]
 }
