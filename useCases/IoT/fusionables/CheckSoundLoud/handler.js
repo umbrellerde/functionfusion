@@ -5,7 +5,7 @@ const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async function(event, callFunction) {
-    console.log('SoundCheckTolerances: Event: ', event);
+    console.log('CheckSoundLoud: Event: ', event);
 
     let callingEvent = event["originalEvent"]
 
@@ -17,10 +17,10 @@ exports.handler = async function(event, callFunction) {
             "#sd": "SensorID"
         },
         ExpressionAttributeValues: {
-            ":sid": {N: '' + (callingEvent["location"] + 1)}
+            ":sid": {N: '' + (callingEvent["sensorID"] + 1)}
         }
     }
-    console.log("Querying with Params", params)
+    console.log("Querying with Params (1)", params)
     let nextTemp = await ddb.query(params).promise()
 
     params = {
@@ -30,28 +30,31 @@ exports.handler = async function(event, callFunction) {
             "#sd": "SensorID"
         },
         ExpressionAttributeValues: {
-            ":sid": {N: (callingEvent["location"] - 1) + ''}
+            ":sid": {N: (callingEvent["sensorID"] - 1) + ''}
         }
     }
-    console.log("Querying with Params", params)
+    console.log("Querying with Params (2)", params)
     let beforeTemp = await ddb.query(params).promise()
 
     console.log("Doing some magic with nextTemp and beforeTemp", nextTemp, beforeTemp)
-    let isTooLoud = Math.random() >= 0.4
+    let isTooLoud = true //Math.random() >= 0.4
 
     console.log("IsTooLoud:" , isTooLoud)
 
     if (isTooLoud) {
         // Set an Alert so that something can happen. I dont know, maybe a technichan would look at the site or whatever
-        let params = {
+        params = {
             TableName: "UseCaseTable",
             Item : {
-                'SensorID': {N: '1000'},
+                'SensorID': {N: '1500'},
                 'Message': {S: JSON.stringify(event)}
             }
         }
     
-        return await ddb.putItem(params).promise()
+        return {
+            from: "CheckSoundLoud",
+            useCaseTable: await ddb.putItem(params).promise()
+        }
     }
     return {}
 }

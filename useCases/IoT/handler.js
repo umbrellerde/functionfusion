@@ -104,7 +104,12 @@ async function invokeRemote(step, data, sync = false) {
 async function invokeLocal(stepName, input, sync) {
     let timeLocal = Date.now()
     let currentHandler = getHandler(stepName)
-    let res = currentHandler.handler(input, callFunction)
+    let res = null
+    if(sync) {
+        res = await currentHandler.handler(input, callFunction)
+    } else {
+        res = currentHandler.handler(input, callFunction)
+    }
     console.log(`time-local-${sync}-${functionToHandle}-${stepName}`, Date.now() - timeLocal)
     return res
 }
@@ -144,14 +149,19 @@ function getHandler(resource) {
     if (handlers[resource]) {
         return handlers[resource]
     }
+    // TODO the reqiore os is cached by node - should not be necessary to cache it?
     handlers[resource] = require(`./fusionables/${resource}/handler`)
     return handlers[resource]
 }
 
 function isInSameFusionGroup(thisName, otherName) {
-    return fusionGroups.filter((e) => e.includes(thisName))[0].includes(otherName)
+    console.log("isInSameFusionGroup? FusionGroups:", fusionGroups, "thisName / otherName", thisName, otherName, "filtered:",
+    fusionGroups.find((e) => e.includes(thisName)))
+    return fusionGroups.find((e) => e.includes(thisName)).includes(otherName)
 }
 
+
+// TODO create GenerateCallFunction mit Parameter der aktuellen Funktion damit man das in den Logs besser sehen kann
 /**
  * 
  * @param {string} name the name of the function that should be called

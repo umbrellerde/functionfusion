@@ -31,5 +31,8 @@ exports.handler = async function (event, callFunction) {
         promises.push(response)
     }
     let answers = await Promise.all(promises) 
-    return answers
+    return {
+        from: "ActionSignage",
+        useCaseTable: answers
+    }
 }

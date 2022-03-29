@@ -13,9 +13,9 @@ base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
 # How many Fusion Groups to try?
-default_iterations=12
+default_iterations=10
 # How many invocations per fusion group?
-default_count=30
+default_count=20
 # Note: remember to change optimization function in optimizer
 
 echo "Base URL is $base_url"
@@ -39,7 +39,8 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     for ((run=0; run<default_count; run++)) do
         printf "\n...$run "
         # aws lambda invoke --function-name coldstarts /dev/null
-        curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}' &
+        #curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}' &
+        curl -X POST "$base_url/SYNC-AnalyzeSensor" -H 'Content-Type: application/json' -d '{"test": "event"}' &
         sleep 1
     done
     printf "\nExtracting & Optimizing...\n"

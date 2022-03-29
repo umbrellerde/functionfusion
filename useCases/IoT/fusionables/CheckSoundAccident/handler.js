@@ -1,33 +1,41 @@
 // This is not called directly by AWS but by the Fusion Handler inside the lambda
 // callFunction is a function that expects three parameters: The Function to Call, the parameters to pass, and whether the result is sync. It returns a promise that *must* be await-ed
-exports.handler = async function(event, callFunction) {
-    console.log('CheckSensor: Event: ', event);
 
-    let callingEvent = event["originalEvent"]
-    let times = 1000
+const AWS = require("aws-sdk")
+const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
+
+exports.handler = async function(event, callFunction) {
+    console.log('CheckSoundAccident: Event: ', event);
+    // {location: event["sensorID"], sieve: 100000}
+
+    let times = 500_000
     try {
         times = parseInt(event["sieve"])
     } catch (err) {
         // Dont care, just use default
     }
 
-    // TODO some probabilistic code
+    // TODO check cameras for slow cars
     let start = Date.now()
     let res = eratosthenes(times)
-               
+    let duration = Date.now() - start
+    console.log("Took time:", duration, "For length", res.length)
+
+    let params = {
+        TableName: "UseCaseTable",
+        Item : {
+            'SensorID': {N: '1001'},
+            'Message': {S: JSON.stringify(event)}
+        }
+    }
+
     return {
-        valid: true,//Math.random() >= 0.8,
-        eratosthenes: res,
-        time: Date.now() - start,
+        from: "CheckSoundAccident",
+        useCaseTable: await ddb.putItem(params).promise()
     }
 }
 
-function randn_bm() {
-    var u = 0, v = 0;
-    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-    while(v === 0) v = Math.random();
-    return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-}
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 function eratosthenes(limit) {
     var primes = [];
@@ -51,7 +59,6 @@ function eratosthenes(limit) {
     return primes;
 }
 
-// Efficient(er) Implementation
 // function eratosthenes(limit) {
 //     // See https://rosettacode.org/wiki/Sieve_of_Eratosthenes#JavaScript
 //     var prms = [];

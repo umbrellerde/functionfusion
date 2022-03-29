@@ -124,7 +124,7 @@ exports.handler = async function (event) {
 }
 
 // TODO Request Response Latency or Billed Duration???
-function getConfigurationWithLowestColdStartLatency(setupsTested) {
+function getConfigurationWithLowestColdStartLatency(setupsTested, requestResponseLatency = true) {
     function getp99(values) {
         if (values.length === 0) throw new Error("No inputs");
 
@@ -138,7 +138,13 @@ function getConfigurationWithLowestColdStartLatency(setupsTested) {
 
     let p99 = {}
     for (let key of Object.keys(setupsTested)) {
-        p99[key] = getp99(setupsTested[key].map(inv => inv["billedDuration"]))
+        let relevantInvocations = []
+        if (requestResponseLatency) {
+            relevantInvocations = setupsTested[key].filter(inv => inv["isRootInvocation"]).map(inv => inv["billedDuration"])
+        } else {
+            relevantInvocations = setupsTested[key].map(inv => inv["billedDuration"])
+        }
+        p99[key] = getp99(relevantInvocations)
     }
 
     // medians["A.B.C"] = 25, etc...
@@ -154,7 +160,7 @@ function getConfigurationWithLowestColdStartLatency(setupsTested) {
     return minKey
 }
 
-function getConfigurationWithLowestLatency(setupsTested) {
+function getConfigurationWithLowestLatency(setupsTested, requestResponseLatency = true) {
     // Iterate over all Keys, get their content. Iterate over the Content and calculate the median billedDuration
 
     function median(values) {
@@ -174,7 +180,13 @@ function getConfigurationWithLowestLatency(setupsTested) {
 
     let medians = {}
     for (let key of Object.keys(setupsTested)) {
-        medians[key] = median(setupsTested[key].map(inv => inv["billedDuration"]))
+        let relevantInvocations = []
+        if (requestResponseLatency) {
+            relevantInvocations = setupsTested[key].filter(inv => inv["isRootInvocation"]).map(inv => inv["billedDuration"])
+        } else {
+            relevantInvocations = setupsTested[key].map(inv => inv["billedDuration"])
+        }
+        medians[key] = median(relevantInvocations)
     }
 
     // medians["A.B.C"] = 25, etc...
@@ -349,7 +361,7 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
     let syncCalls = new Set()
     // Initialize the Set so that initially every function is inside its own syncSet
     let functionNames = functionLogGroupNames.map(fn => fn.split("-")[2])
-    functionNames.forEach(fname => syncCalls.add(new Set(fname)))
+    functionNames.forEach(fname => syncCalls.add(new Set([fname])))
 
     // Go over all Invocations and merge the sets that call each other
     for (let key of Object.keys(setupsTested)) {
@@ -359,15 +371,19 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
             let syncCallsList = invocation["calls"]
                 .filter((call) => call["sync"] == true)
                 .map((call) => call["called"])
+            console.log("Sync Call List for this invocation:", syncCallsList)
             // Go over every pair of sync calls and check if they are already in the same sync set
             pairs(syncCallsList).forEach(pair => {
                 // pair[0] and pair[1] are the functions that should be together
+                console.log("Checking if Pair is already in same sync group:", pair, "syncCalls:", syncCalls)
                 let firstSet = [...syncCalls].find(set => set.has(pair[0]))
                 let alreadySync = firstSet.has(pair[1])
                 if (!alreadySync) {
+                    console.log("...Moving together. Before =", syncCalls)
                     let secondSet = [...syncCalls].find(set => set.has(pair[1]))
                     syncCalls.delete(secondSet);
                     [...secondSet].forEach(item => firstSet.add(item))
+                    console.log("...After =", syncCalls)
                 }
             })
         }

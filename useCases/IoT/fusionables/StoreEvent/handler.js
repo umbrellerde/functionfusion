@@ -5,17 +5,15 @@ const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async function(event, callFunction) {
-    console.log('AirQualityAlarm: Event: ', event);
-
-    let callingEvent = event["originalEvent"]
+    console.log('StoreEvent: Event: ', event);
+    // {location: event["sensorID"], duration: 10}
 
     let params = {
-        TableName: "UseCaseTable",
+        TableName: "SensorDataTable",
         Item : {
-            'SensorID': {N: '999'},
-            'Message': {S: JSON.stringify(callingEvent)}
+            'SensorID': {N: event["sensorID"] + ''},
+            'Message': {S: JSON.stringify(event)}
         }
     }
-
     return await ddb.putItem(params).promise()
 }
