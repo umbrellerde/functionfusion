@@ -12,8 +12,11 @@ terraform apply -auto-approve --parallelism=4
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
-default_count=20
-default_iterations=13
+# Number of Fusion Groups
+default_iterations=10
+# Number of Iterations per Fusion Group
+default_count=50
+
 
 echo "Base URL is $base_url"
 
@@ -37,12 +40,11 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
         printf "\n...$run "
         aws lambda invoke --function-name coldstarts /dev/null
         curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}'
-        sleep 5
+        #curl -X POST "$base_url/SYNC-AnalyzeSensor" -H 'Content-Type: application/json' -d '{"test": "event"}'
     done
     printf "\nExtracting & Optimizing & Coldifying...\n"
     #(aws lambda invoke --function-name extractor /dev/null && aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null) &
-    #sleep 5
-    awsume trever
+    sleep 10
     aws lambda invoke --function-name extractor /dev/null
     aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null
     printf "\nDone...\n"
@@ -51,10 +53,11 @@ done
 printf "Sleeping 30s to let CloudWatch catch up\n"
 sleep 30
 printf "\nExtracting...\n"
-awsume trever
 aws lambda invoke --function-name extractor /dev/null
 
 echo "Getting Results!"
+echo "Bucket is: $s3_bucket"
+echo "Copy command is aws s3 cp s3://$s3_bucket $SCRIPT_DIR/statistics/results --recursive --exclude *.zip"
 aws s3 cp "s3://$s3_bucket" "$SCRIPT_DIR/statistics/results" --recursive --exclude "*.zip"
 
 # aws s3 cp "s3://(terraform output -raw lambda_bucket_name)" "./statistics/results" --recursive --exclude "*.zip"

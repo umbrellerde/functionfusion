@@ -72,7 +72,8 @@ resource "aws_lambda_function" "hello_world" {
     variables = {
       S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
       FUNCTION_TO_HANDLE = each.value
-      FUSION_GROUPS = join(".", local.function_names)
+      // THIS IS IMPORTANT: What should the initial fusion groups look like?
+      FUSION_GROUPS = join(",", local.function_names)
     }
   }
 }

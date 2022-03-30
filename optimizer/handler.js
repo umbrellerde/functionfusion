@@ -67,7 +67,8 @@ exports.handler = async function (event) {
     let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestLatency)
 
     if (newConfiguration == null) {
-        console.log("Getting an untested configuration")
+        console.log("********************************************************************")
+        console.log("Getting the currently best configuration")
         stillTryingNewConfigurations = false
         newConfiguration = getConfigurationWithLowestLatency(setupsTested)
     } else {
@@ -157,6 +158,7 @@ function getConfigurationWithLowestColdStartLatency(setupsTested, requestRespons
             minValue = p99[key]
         }
     }
+    console.log("Medians are: ", medians, "with minKey", minKey)
     return minKey
 }
 
@@ -199,6 +201,7 @@ function getConfigurationWithLowestLatency(setupsTested, requestResponseLatency 
             minValue = medians[key]
         }
     }
+    console.log("Medians are: ", medians, "with minKey", minKey)
     return minKey
 }
 

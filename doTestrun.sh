@@ -13,9 +13,9 @@ base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
 # How many Fusion Groups to try?
-default_iterations=10
+default_iterations=20
 # How many invocations per fusion group?
-default_count=20
+default_count=50
 # Note: remember to change optimization function in optimizer
 
 echo "Base URL is $base_url"

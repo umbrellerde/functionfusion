@@ -7,7 +7,7 @@ const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 exports.handler = async function(event, callFunction) {
     console.log('DetectJam: Event: ', event);
 
-    let res = eratosthenes(1000)
+    let res = eratosthenes(500_000).length
     console.log("Found", res.length, "primes. Storing Jam Info in DynamoDB")
 
     let params = {

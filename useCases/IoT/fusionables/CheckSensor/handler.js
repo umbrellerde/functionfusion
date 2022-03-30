@@ -4,7 +4,7 @@ exports.handler = async function(event, callFunction) {
     console.log('CheckSensor: Event: ', event);
 
     let callingEvent = event["originalEvent"]
-    let times = 1000
+    let times = 500_000
     try {
         times = parseInt(event["sieve"])
     } catch (err) {

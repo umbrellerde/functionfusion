@@ -107,7 +107,7 @@ resource "aws_lambda_function" "extractor" {
 
   role = aws_iam_role.lambda_extractor.arn
 
-  timeout = 60
+  timeout = 240
 
   environment {
     variables = {

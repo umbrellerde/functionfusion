@@ -150,7 +150,8 @@ async function saveInvocationsToS3(invocations) {
  * @param {string} logGroupName 
  */
 async function getInvocationsFromLogGroup(logGroupName) {
-    let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
+    // let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
+    let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
     let endTime = Date.now()
 
     const allLogStreamsInput = {
