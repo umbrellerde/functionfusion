@@ -1,5 +1,5 @@
 const AWS = require("aws-sdk");
-const { assert } = require("console");
+const { assert, time } = require("console");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -9,9 +9,27 @@ const s3 = new AWS.S3()
 const bucketName = process.env["S3_BUCKET_NAME"]
 
 const logGroupNames = process.env["LOG_GROUP_NAMES"].split(",")
+let fusionSet = new Set();
+let timeoutMs = null
 
 exports.handler = async function (event) {
-    console.log("Starting Extractor")
+    console.log("Starting Extractor with event", event)
+
+    let alternativeTimeout = 180000
+    try {
+        timeoutMs = parseInt(event["timeout"]) || alternativeTimeout
+    } catch (error) {
+            //let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
+        //let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
+        //let startTime = Date.now() - 300_000 // 5min for the IoT full test
+        //let startTime = Date.now() - 3_600_000 // 30 Minutes for 300 invocations test
+        //let startTime = Date.now() - 15_840_000 // 4.5h
+        // 86_400_000 48hrs
+        timeoutMs = alternativeTimeout
+    }
+
+    console.log("TimeoutMs is:", timeoutMs)
+
     let allInvocations = []
 
     for (let i = 0; i < logGroupNames.length; i++) {
@@ -24,12 +42,14 @@ exports.handler = async function (event) {
 
     await saveInvocationsToS3(allInvocations)
 
+    fusionSet = new Set();
+
     return {
         statusCode: 200,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { invocations: allInvocations },
+        body: { invocations: allInvocations.length },
     }
 }
 
@@ -42,31 +62,25 @@ async function saveInvocationsToS3(invocations) {
     // Filter for only root invocations
     //invocations = invocations.filter(inv => inv["isRootInvocation"] == true)
 
-    // A List of invocation by fusion group. Normally this should only be one fusion group, but you never know
+    let fusionSetups = [...fusionSet]
 
-    let fusionSetups = {}
-
-    for (let i = 0; i < invocations.length; i++) {
-        let curr = invocations[i]
-        if (!fusionSetups.hasOwnProperty(curr["fusionGroup"])) {
-            fusionSetups[curr["fusionGroup"]] = []
-        }
-        fusionSetups[curr["fusionGroup"]].push(curr)
-    }
+    console.log("Fusion Setups are: ", fusionSetups)
+    console.log("Fusion Set is: ", fusionSet)
 
     let promises = []
     // Get the old data for these fusion groups and merge it with the new data.
-    for (let key of Object.keys(fusionSetups)) {
+    for (let i = 0; i < fusionSetups.length; i++) {
+        let key = fusionSetups[i]
         console.log("...Currently merging Traces for fusiongroup", key)
-        let newTraces = fusionSetups[key]
+        let newTraces = invocations.filter(inv => inv["fusionGroup"] == key)
         // Get existing Traces
         let existingTraces = await getFromBucket(bucketName, `${key}.json`)
-        console.log("Got existing traces", existingTraces)
+        //console.log("Got existing traces", existingTraces)
 
         // Check if the object is not empty
         if (Object.keys(existingTraces).length > 0) {
-            console.log("Rewriting Keys")
-            console.log("Existing Keys before Rewrite:", existingTraces)
+            //console.log("Rewriting Keys")
+            //console.log("Existing Keys before Rewrite:", existingTraces)
             let tracesList = []
             for (const [key, value] of Object.entries(existingTraces)) {
                 tracesList.push(value)
@@ -74,7 +88,7 @@ async function saveInvocationsToS3(invocations) {
             existingTraces = tracesList
         }
 
-        console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
+        //console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
         // Merge together
         // TODO Make it a Set and then export the set to a list
         // TODO Better Merge the Old and New Traces
@@ -104,39 +118,44 @@ async function saveInvocationsToS3(invocations) {
 
         for (let i = 0; i < newTraces.length; i++) {
             let currNew = newTraces[i]
-            console.log("Checking new Trace", currNew)
+            //console.log("Checking new Trace", currNew)
             let found = false
             for (let j=0; j < existingTraces.length; j++) {
-                let currExisting = existingTraces[j]
-                if (currNew["traceId"] === currExisting["traceId"] && currNew["currentFunction"] === currExisting["currentFunction"] && currNew["startTimestamp"] === currExisting["startTimestamp"]) {
-                    found = true
-                    // Here: new and existing are the same function invocation
-                    if (currNew["calls"].length == currExisting["calls"].length) {
-                        // currExisting is up to date, skip to next currExisting
-                        console.log("currNew and currExisting are the same", currNew, currExisting)
-                        break
-                    } else {
-                        console.log("Merging new and Existing calls into each other", currNew, currExisting)
-                        // Merge calls of currNew into calls of currExisting
-                        for (let possibleNewCall of currExisting["calls"]) {
-                            if (!currNew["calls"].some(o => o["called"] === possibleNewCall["called"] && o["time"] === possibleNewCall["time"])) {
-                                // Call does not already exist!
-                                existingTraces[j]["calls"].push(possibleNewCall)
+                try {
+                    let currExisting = existingTraces[j]
+                    if (currNew["traceId"] === currExisting["traceId"] && currNew["currentFunction"] === currExisting["currentFunction"] && currNew["startTimestamp"] === currExisting["startTimestamp"]) {
+                        found = true
+                        // Here: new and existing are the same function invocation
+                        if (currNew["calls"].length == currExisting["calls"].length) {
+                            // currExisting is up to date, skip to next currExisting
+                            //console.log("currNew and currExisting are the same", currNew, currExisting)
+                            break
+                        } else {
+                            //console.log("Merging new and Existing calls into each other", currNew, currExisting)
+                            // Merge calls of currNew into calls of currExisting
+                            for (let possibleNewCall of currExisting["calls"]) {
+                                if (!currNew["calls"].some(o => o["called"] === possibleNewCall["called"] && o["time"] === possibleNewCall["time"])) {
+                                    // Call does not already exist!
+                                    existingTraces[j]["calls"].push(possibleNewCall)
+                                }
                             }
+                            // There are now up to date --> Break out of loop
+                            break
                         }
-                        // There are now up to date --> Break out of loop
-                        break
                     }
+                } catch (error) {
+                    console.log("Error during Merging, invocation is", existingTraces[j], error)
                 }
+                
             }
             if (!found) {
-                console.log("Pushing new onto List:", currNew)
+                //console.log("Pushing new onto List:", currNew)
                 existingTraces.push(currNew)
             }
         }
         let mergedTraces = existingTraces
 
-        console.log("Type of Merged Traces is", typeof mergedTraces)
+        //console.log("Type of Merged Traces is", typeof mergedTraces)
         // Save to S3
         let promise = uploadToBucket(bucketName, `${key}.json`, mergedTraces)
         promises.push(promise)
@@ -150,25 +169,38 @@ async function saveInvocationsToS3(invocations) {
  * @param {string} logGroupName 
  */
 async function getInvocationsFromLogGroup(logGroupName) {
-    // let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
-    let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
+
+    let startTime = Date.now() - timeoutMs
     let endTime = Date.now()
 
     const allLogStreamsInput = {
         logGroupName: logGroupName,
+        limit: 50,
     }
 
     let allLogStreams = null
     try {
         allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
+        while (allLogStreams["nextToken"]) {
+            console.log("Found a next Token:", allLogStreams["nextToken"])
+            allLogStreamsInput["nextToken"] = allLogStreams["nextToken"]
+            let newLogStream = await cw.describeLogStreams(allLogStreamsInput).promise()
+            allLogStreams["logStreams"] = allLogStreams["logStreams"].concat(newLogStream["logStreams"])
+            allLogStreams["nextToken"] = newLogStream["nextToken"]
+        }
     } catch (error) {
         console.error("describeLogStreams failed with ", error)
         throw error
     }
 
+    console.log("AllLogStreams has found LogStreams:", allLogStreams["logStreams"].length, "for log group", logGroupName)
+
     let invocations = []
 
     for (let i = 0; i < allLogStreams["logStreams"].length; i++) {
+        if (i % 100 == 0) {
+            console.log("Reading Stream", i)
+        }
         let stream = allLogStreams["logStreams"][i]
 
         const params = {
@@ -176,28 +208,74 @@ async function getInvocationsFromLogGroup(logGroupName) {
             endTime: endTime,
             logGroupName: logGroupName,
             logStreamName: stream["logStreamName"],
-        }
-        let logEvents = null
-        try {
-            logEvents = await cw.getLogEvents(params).promise()
-        } catch (error) {
-            console.error("getLogEvents failed with ", error)
-            throw error
+            startFromHead: true
         }
 
+        let logEvents = null
+        let tries = 1
+        // Download the logStream with the given parameters
+        while (logEvents == null) {
+            try {
+                logEvents = await cw.getLogEvents(params).promise()
+            } catch (error) {
+                console.error("getLogEvents failed with ", error, "on try", tries)
+                if (tries > 10) {
+                    throw error
+                }
+                await new Promise(resolve => setTimeout(resolve, 5000 * tries))
+                tries++
+            }
+        }
+        //console.log("Finished reading first events, trying nextForwardToken")
+        while(logEvents.hasOwnProperty("nextForwardToken")) {
+            //console.log("LogEvents has nextToken", logEvents["nextForwardToken"])
+            params["nextToken"] = logEvents["nextForwardToken"]
+            let newEvents = null
+            while (newEvents == null) {
+                try {
+                    newEvents = await cw.getLogEvents(params).promise()
+                } catch (error) {
+                    console.error("getLogEvents with next tokens failed with ", error, "on try", tries)
+                    if (tries > 10) {
+                        throw error
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 5000 * tries))
+                    tries++
+                }
+            }
+            //console.log("New Events Forward Token")
+            //console.log(newEvents["nextForwardToken"])
+            logEvents["events"] = logEvents["events"].concat(newEvents["events"])
+            //console.log("Log Events is now length:", logEvents["events"].length)
+            if (newEvents["nextForwardToken"] === logEvents["nextForwardToken"]) {
+                // Same response twice ==> Break
+                //console.log("Got same FW Token twice, breaking")
+                break;
+            } else {
+                logEvents["nextForwardToken"] = newEvents["nextForwardToken"]
+            }
+            
+        }
+
+        if (i % 100 == 0) {
+            console.log("Found log Events:", logEvents["events"].length)
+        }
         let startI = 0
+        let searchingForStart = true
         for (let i = 0; i < logEvents["events"].length; i++) {
             let currentEvent = logEvents["events"][i]
-            if (currentEvent["message"].includes("START RequestId: ")) {
+            if (searchingForStart && currentEvent["message"].includes("START RequestId: ")) {
                 startI = i
-                console.log("----- Found Start Message!", currentEvent)
-            } else if (currentEvent["message"].includes("REPORT RequestId: ")) {
-                console.log("----- Found Report Message!", currentEvent)
+                searchingForStart = false
+                //console.log("----- Found Start Message!", currentEvent)
+            } else if ((!searchingForStart) && currentEvent["message"].includes("REPORT RequestId: ")) {
+                //console.log("----- Found Report Message!", currentEvent)
+                searchingForStart = true
                 let newInvocation = extractInvocation(logEvents["events"].slice(startI, i + 1))
                 if (newInvocation != null) {
                     invocations.push(newInvocation)
                 } else {
-                    console.log("The Invocation could not be found")
+                   //console.log("The Invocation could not be found")
                 }
 
             }
@@ -211,7 +289,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
  * @param {Array<Object>} invocationEvents
  */
 function extractInvocation(invocationEvents) {
-    assert(invocationEvents[0]["message"].includes("START RequestId"), "An Invocation should start with 'START RequestId'")
+    assert(invocationEvents[0]["message"].includes("START RequestId"), "An Invocation should start with 'START RequestId'. Events:", invocationEvents)
     assert(invocationEvents[invocationEvents.length - 1]["message"].includes("REPORT RequestId:"), "An Invocation should end with 'REPORT RequestId:'")
     // Get the last Message that should be the report, for example
     // 2022-02-11T15:57:02.506+01:00	REPORT RequestId: 627f1e04-9632-4d5c-8a1f-dbb13218d791 Duration: 1504.20 ms Billed Duration: 1505 ms Memory Size: 128 MB Max Memory Used: 79 MB 
@@ -221,15 +299,18 @@ function extractInvocation(invocationEvents) {
 
         // The second line (first line of the log) should contain the TraceId, for example
         // .replace call replaces newlines with empty string
-        console.log("Amount of Messages are", invocationEvents.length)
-        console.log("First message (TraceId) is", invocationEvents[1]["message"])
-        console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
-        console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
-        console.log("All Log Messages Are", invocationEvents)
+        //console.log("Amount of Messages are", invocationEvents.length)
+        //console.log("First message (TraceId) is", invocationEvents[1]["message"])
+        //console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
+        //console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
+        //console.log("All Log Messages Are", invocationEvents)
         let [fusionGroup, source, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
         let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
         let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
         let maxMemoryUsed = parseInt(report.split("Max Memory Used: ")[1].split(" ")[0])
+
+        //console.log("Fusion Group is", fusionGroup)
+        fusionSet.add(fusionGroup)
 
         let startTimestamp = parseInt(invocationEvents[1]["timestamp"])
         // Not the report, but the END message ==> second to last message

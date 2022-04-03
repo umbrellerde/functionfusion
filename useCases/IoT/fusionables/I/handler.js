@@ -32,17 +32,17 @@ exports.handler = async function(event, callFunction) {
 
     let calls = []
 
-    let checkResult = await callFunction("CheckSensor", {originalEvent: event["Temperature"]}, true)
+    let checkResult = await callFunction("CW", {originalEvent: event["Temperature"]}, true)
     if (checkResult == false) {
         console.log("Well this shouldn't happen but theoretically: handle failed sensor here")
     }
 
     // Write the sensor Data to DynamoDB
-    await callFunction("StoreEvent", event["Temperature"], true)
+    await callFunction("SE", event["Temperature"], true)
 
-    calls.push(callFunction("CheckTemperature", {originalEvent: event["Temperature"]}, false))
-    calls.push(callFunction("CheckSound", {originalEvent: event["Sound"]}, false))
-    calls.push(callFunction("CheckAir", {originalEvent: event["AirQuality"]}, false))
+    calls.push(callFunction("CT", {originalEvent: event["Temperature"]}, false))
+    calls.push(callFunction("CS", {originalEvent: event["Sound"]}, false))
+    calls.push(callFunction("CA", {originalEvent: event["AirQuality"]}, false))
 
     // Do some stuff based on the input - this just calls different functions randomly to emulate function-daisy-chains.
     // switch (event["sensor"]) {
@@ -115,6 +115,7 @@ exports.handler = async function(event, callFunction) {
     console.log("AnalyzeSensor: All Promises are done, results are", results)
 
     return {
+        fusionSetup: process.env["FUSION_GROUPS"],
         results: results
     }
 }

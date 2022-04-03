@@ -72,7 +72,8 @@ function getNextPossibleConfiguration(functionNames) {
     return tryAllCombinations([], functionNames)
 }
 
-console.log(getNextPossibleConfiguration(["A", "B", "C", "D", "E", "F", "G"]))
+// console.log(getNextPossibleConfiguration(["A", "B", "C", "D", "E", "F", "G"]))
+console.log(getNextPossibleConfiguration(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]))
 console.log("--------------------------------")
 console.log(listOfAll)
 console.log("Total Length:", listOfAll.length)

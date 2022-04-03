@@ -113,7 +113,8 @@ exports.handler = async function (event) {
         promises.push(promise)
     }
 
-    await Promise.all(promises)
+    let result = await Promise.all(promises)
+    console.log("AWS Answered", result)
 
     return {
         statusCode: 200,
@@ -126,6 +127,7 @@ exports.handler = async function (event) {
 
 // TODO Request Response Latency or Billed Duration???
 function getConfigurationWithLowestColdStartLatency(setupsTested, requestResponseLatency = true) {
+    console.log("GetConfigurationWithLowestColdStartLatency")
     function getp99(values) {
         if (values.length === 0) throw new Error("No inputs");
 
@@ -164,6 +166,7 @@ function getConfigurationWithLowestColdStartLatency(setupsTested, requestRespons
 
 function getConfigurationWithLowestLatency(setupsTested, requestResponseLatency = true) {
     // Iterate over all Keys, get their content. Iterate over the Content and calculate the median billedDuration
+    console.log("GetConfigurationWithLowestLatency")
 
     function median(values) {
         if (values.length === 0) throw new Error("No inputs");
@@ -194,7 +197,8 @@ function getConfigurationWithLowestLatency(setupsTested, requestResponseLatency 
     // medians["A.B.C"] = 25, etc...
 
 
-    let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
+    let minKey = ""
+    let minValue = Number.MAX_SAFE_INTEGER
     for (let key of Object.keys(medians)) {
         if (medians[key] < minValue) {
             minKey = key
@@ -295,12 +299,9 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
                 // console.log("(Currently trying definite)", definiteGroups)
                 // console.log("(Current Subset)", subset)
                 if (!alreadyTested(setupFromList(newDefiniteGroups))) {
-                    console.log("!!!!!!! Found Untested One! ", newDefiniteGroups)
                     return newDefiniteGroups
                 }
-                console.log("...New Group was already tested, continuing", newDefiniteGroups)
             } else {
-                console.log("...Since restUngrouped is not empty, going deeper")
                 let subcombinations = tryAllCombinations(newDefiniteGroups, restUngrouped)
                 if (subcombinations != null) {
                     return subcombinations
@@ -316,42 +317,6 @@ function getNextPossibleConfiguration(setupsTested, functionNames) {
 }
 
 const pairs = (arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat();
-function getConfigurationWithLowestLatency(setupsTested) {
-    // Iterate over all Keys, get their content. Iterate over the Content and calculate the median billedDuration
-
-    function median(values) {
-        if (values.length === 0) throw new Error("No inputs");
-
-        values.sort(function (a, b) {
-            return a - b;
-        });
-
-        var half = Math.floor(values.length / 2);
-
-        if (values.length % 2)
-            return values[half];
-
-        return (values[half - 1] + values[half]) / 2.0;
-    }
-
-    let medians = {}
-    for (let key of Object.keys(setupsTested)) {
-        medians[key] = median(setupsTested[key].map(inv => inv["billedDuration"]))
-    }
-
-    // medians["A.B.C"] = 25, etc...
-
-
-    let [minKey, minValue] = ["", Number.MAX_SAFE_INTEGER]
-    for (let key of Object.keys(medians)) {
-        if (medians[key] < minValue) {
-            minKey = key
-            minValue = medians[key]
-        }
-    }
-    return minKey
-}
-
 function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, functionToFindBase = getConfigurationWithLowestLatency) {
     let currentMin = functionToFindBase(setupsTested)
     let currentOptimalSetup = listFromSetup(currentMin)
@@ -374,19 +339,15 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
             let syncCallsList = invocation["calls"]
                 .filter((call) => call["sync"] == true)
                 .map((call) => call["called"])
-            console.log("Sync Call List for this invocation:", syncCallsList)
             // Go over every pair of sync calls and check if they are already in the same sync set
             pairs(syncCallsList).forEach(pair => {
                 // pair[0] and pair[1] are the functions that should be together
-                console.log("Checking if Pair is already in same sync group:", pair, "syncCalls:", syncCalls)
                 let firstSet = [...syncCalls].find(set => set.has(pair[0]))
                 let alreadySync = firstSet.has(pair[1])
                 if (!alreadySync) {
-                    console.log("...Moving together. Before =", syncCalls)
                     let secondSet = [...syncCalls].find(set => set.has(pair[1]))
                     syncCalls.delete(secondSet);
                     [...secondSet].forEach(item => firstSet.add(item))
-                    console.log("...After =", syncCalls)
                 }
             })
         }
@@ -398,29 +359,24 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
     for (let i = 0; i < currentOptimalSetup.length; i++) {
         let fusionGroup = currentOptimalSetup[i]
         for (let fktn of fusionGroup) {
-            console.log("Currently Trying function", fktn)
 
             //----------------------------------------------
             // Check if there are any functions that are in a sync set with a function that does not get called at all.
-            console.log("Trying to find a function that is not called at all but in the same fusion group as", fktn)
             let fktnGroup = currentOptimalSetup.find(it => it.includes(fktn))
-            console.log("Function Group is", fktnGroup)
             let fktnSyncSet = [...syncCalls].find(it => it.has(fktn))
-            console.log("Function Sync Set is", fktnSyncSet)
-
             for (let j = fktnGroup.length - 1; j >= 0; j--) {
                 let fktnInGroup = fktnGroup[j]
                 if (!fktnSyncSet.has(fktnInGroup)) {
-                    console.log(fktnInGroup, "should not be in the same fusionGroup as", fktn)
+                    //console.log(fktnInGroup, "should not be in the same fusionGroup as", fktn)
                     let i = currentOptimalSetup.findIndex(it => it.includes(fktn))
                     let newSetup = [...currentOptimalSetup]
                     newSetup[i] = fktnGroup.filter(item => item !== fktnInGroup)
                     newSetup.push([fktnInGroup])
-                    console.log("new Optimal Setup", setupFromList(newSetup))
+                    //console.log("new Optimal Setup", setupFromList(newSetup))
 
                     let alreadyTested = Object.keys(setupsTested).includes(setupFromList(newSetup))
                     if (nullIfAlreadyTested && alreadyTested) {
-                        console.log("Returning Null because it has already been tested")
+                        //console.log("Returning Null because it has already been tested")
                         return null
 
                     }
@@ -428,10 +384,10 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
                     if (!alreadyTested) {
                         return setupFromList(newSetup)
                     } else {
-                        console.log("...was already")
+                        //console.log("...was already")
                     }
                 } else {
-                    console.log("Function Sync Set contains function", fktnInGroup)
+                    //console.log("Function Sync Set contains function", fktnInGroup)
                 }
             }
 
@@ -441,25 +397,25 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
             let syncSet = [...syncCalls].find(s => s.has(fktn))
             if (syncSet === undefined) {
                 // The function was not called, ignore it
-                console.log("Skipping uncalled function", fktn)
+                //console.log("Skipping uncalled function", fktn)
                 continue
             }
             let syncSetAsArray = [...syncSet]
             for (let j = 0; j < syncSetAsArray.length; j++) {
                 let shouldBeSync = syncSetAsArray[j]
-                console.log("Trying whether", shouldBeSync, "is already in fusion group", fusionGroup)
-                console.log("Shouldbesync type:", typeof shouldBeSync)
+                //console.log("Trying whether", shouldBeSync, "is already in fusion group", fusionGroup)
+                //console.log("Shouldbesync type:", typeof shouldBeSync)
                 if (!fusionGroup.includes(shouldBeSync)) {
-                    console.log("!!! Found one! FusionGroup", fusionGroup, "does not include", shouldBeSync, "!")
-                    console.log("Old Optimal Setup: ", currentOptimalSetup)
+                    //console.log("!!! Found one! FusionGroup", fusionGroup, "does not include", shouldBeSync, "!")
+                    //console.log("Old Optimal Setup: ", currentOptimalSetup)
                     // Found one! shouldBeSync should be in Fusion group, but its not.
                     // Remove shouldBeSync from other fusion group
                     for (let k = 0; k < currentOptimalSetup.length; k++) {
                         // Get the fusion group without the Item to be removed
                         let newGroup = currentOptimalSetup[k].filter(item => item !== shouldBeSync)
-                        console.log("Current Group", currentOptimalSetup[k], "filtered down to", newGroup)
+                        //console.log("Current Group", currentOptimalSetup[k], "filtered down to", newGroup)
                         if (newGroup.length == 0) {
-                            console.log("...Removing it")
+                            //console.log("...Removing it")
                             // The group without the item is empty==> Remote it fully
                             // The Fusion Group is gone now, remove this element
                             currentOptimalSetup.splice(k, 1)
@@ -469,14 +425,14 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
                     }
                     // Add to current fusion group
                     currentOptimalSetup[i].push(shouldBeSync)
-                    console.log("New Optimal Setup: ", currentOptimalSetup)
+                    //console.log("New Optimal Setup: ", currentOptimalSetup)
 
                     // Was this setup already tested?
                     let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
 
                     if (alreadyTested) {
                         // The iteration on the current lowest latency was already tested...
-                        console.log("New Optimum has already been tested...")
+                        //console.log("New Optimum has already been tested...")
 
                         if (nullIfAlreadyTested) {
                             return null
@@ -487,7 +443,7 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
 
                     return setupFromList(currentOptimalSetup)
                 } else {
-                    console.log("...It is already...")
+                    //console.log("...It is already...")
                 }
             }
             //----------------------------------------------
@@ -498,10 +454,10 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
             let notSyncSetAsArray = [...notSyncSet]
             for (let j = 0; j < notSyncSetAsArray.length; j++) {
                 let shouldNotBeSync = notSyncSetAsArray[j]
-                console.log("Trying whether", shouldNotBeSync, "is wrongly in fusion group", fusionGroup)
+                //console.log("Trying whether", shouldNotBeSync, "is wrongly in fusion group", fusionGroup)
                 if (fusionGroup.includes(shouldNotBeSync)) {
-                    console.log("!!! Found one! FusionGroup", fusionGroup, "includes", shouldNotBeSync, ", but shouldn't!")
-                    console.log("Old Optimal Setup: ", currentOptimalSetup)
+                    //console.log("!!! Found one! FusionGroup", fusionGroup, "includes", shouldNotBeSync, ", but shouldn't!")
+                    //console.log("Old Optimal Setup: ", currentOptimalSetup)
                     // Found one! shouldNotBeSync should NOT be in Fusion group, but it is.
                     // Remote shouldNotBeSync from the fusion group
                     for (let k = 0; k < currentOptimalSetup.length; k++) {
@@ -516,17 +472,17 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
                     }
                     // Add to a new fusion group with this member
                     currentOptimalSetup.push([shouldNotBeSync])
-                    console.log("New Optimal Setup: ", currentOptimalSetup)
+                    //console.log("New Optimal Setup: ", currentOptimalSetup)
 
                     // Was this setup already tested?
                     let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
 
                     if (alreadyTested) {
                         // The iteration on the current lowest latency was already tested...
-                        console.log("New Optimum has already been tested...")
+                       // console.log("New Optimum has already been tested...")
 
                         if (nullIfAlreadyTested) {
-                            console.log("Returning Null because it has already been tested")
+                            //console.log("Returning Null because it has already been tested")
                             return null
                         }
 
@@ -535,7 +491,7 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, funct
 
                     return setupFromList(currentOptimalSetup)
                 } else {
-                    console.log("...It is already...")
+                    //console.log("...It is already...")
                 }
             }
         }

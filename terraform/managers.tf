@@ -26,6 +26,7 @@ resource "aws_lambda_function" "optimizer" {
   role = aws_iam_role.lambda_optimizer.arn
 
   timeout = 60
+  memory_size = 512
 
   environment {
     variables = {
@@ -107,7 +108,8 @@ resource "aws_lambda_function" "extractor" {
 
   role = aws_iam_role.lambda_extractor.arn
 
-  timeout = 240
+  timeout = 900
+  memory_size = 1024
 
   environment {
     variables = {

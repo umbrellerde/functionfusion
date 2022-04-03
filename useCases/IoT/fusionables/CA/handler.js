@@ -5,20 +5,17 @@ const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async function(event, callFunction) {
-    console.log('CheckSound: Event: ', event);
+    console.log('CheckAir: Event: ', event);
 
-    let calls = []
+    let sensorID = event["originalEvent"]["sensorID"]
+    let chain = 5
 
-    event["location"] = event["originalEvent"]["sensorID"]
-    event["sensorID"] = event["originalEvent"]["sensorID"]
+    let res = await callFunction("DJ", event, true)
+    console.log("Got Response from DetectJam: ", res)
 
-    calls.push(callFunction("CheckSoundLoud", event, true))
-    calls.push(callFunction("CheckSoundAccident", event, true))
-
-    console.log("CheckSound has called Loud and Accident")
-
+    console.log("CheckAir is calling Signage async")
     return {
-        from: "CheckSound",
-        calls: await Promise.all(calls)
+        from: "CheckAir",
+        actionSignage: await callFunction("AS", {location: sensorID, chain: chain}, false)
     }
 }

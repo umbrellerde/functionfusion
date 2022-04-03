@@ -1,0 +1,1 @@
+{"errorType":"TypeError","errorMessage":"Cannot read property 'hasOwnProperty' of null","trace":["TypeError: Cannot read property 'hasOwnProperty' of null","    at getInvocationsFromLogGroup (/var/task/handler.js:231:29)","    at async Runtime.exports.handler (/var/task/handler.js:35:27)"]}
