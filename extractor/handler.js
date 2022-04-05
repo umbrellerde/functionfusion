@@ -224,6 +224,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
                 }
                 await new Promise(resolve => setTimeout(resolve, 5000 * tries))
                 tries++
+                continue
             }
         }
         //console.log("Finished reading first events, trying nextForwardToken")
@@ -241,6 +242,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
                     }
                     await new Promise(resolve => setTimeout(resolve, 5000 * tries))
                     tries++
+                    continue
                 }
             }
             //console.log("New Events Forward Token")

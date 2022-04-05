@@ -16,7 +16,7 @@ base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 
 # Number of Fusion Groups
-default_iterations=6
+default_iterations=7
 # Number of Iterations per Fusion Group
 default_count=300
 
@@ -42,14 +42,17 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     for ((run=0; run<default_count; run++)) do
         printf "\n...$run "
         aws lambda invoke --function-name coldstarts /dev/null
-        curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}'
-        #curl -X POST "$base_url/SYNC-I" -H 'Content-Type: application/json' -d '{"test": "event"}'
+        #curl -X POST "$base_url/SYNC-A" -H 'Content-Type: application/json' -d '{"test": "event"}'
+        curl -X POST "$base_url/SYNC-I" -H 'Content-Type: application/json' -d '{"test": "event"}'
     done
     printf "\nExtracting & Optimizing & Coldifying...\n"
     #(aws lambda invoke --function-name extractor /dev/null && aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null) &
     sleep 15
     echo "Extracting"
-    aws lambda invoke --function-name extractor --payload '{"timeout": "750000"}' /dev/null
+    
+    time node "$SCRIPT_DIR/tests/extractLocally.js" 3600000
+    #aws lambda invoke --function-name extractor --payload '{"timeout": "750000"}' /dev/null
+    
     echo "Optimizing"
     aws lambda invoke --function-name optimizer --payload '{"deleteSeconds": 0}' /dev/null
     printf "\nDone...\n"
@@ -58,7 +61,9 @@ done
 printf "Sleeping 30s to let CloudWatch catch up\n"
 sleep 30
 printf "\nExtracting...\n"
-aws lambda invoke --function-name extractor --payload '{"timeout": "15840000"}' /dev/null
+
+time node "$SCRIPT_DIR/tests/extractLocally.js" 86400000
+#aws lambda invoke --function-name extractor --payload '{"timeout": "15840000"}' /dev/null
 
 echo "Getting Results!"
 echo "Bucket is: $s3_bucket"

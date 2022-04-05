@@ -6,9 +6,10 @@ AWS.config.update({ region: "eu-central-1" })
 const cw = new AWS.CloudWatchLogs();
 const s3 = new AWS.S3()
 
-const bucketName = "fusion-code-luckily-radically-improved-python" //TODO
+const bucketName = "fusion-code-centrally-seemingly-healthy-oarfish" //TODO
 
-const logGroupNames = ["/aws/lambda/fusion-function-A","/aws/lambda/fusion-function-B","/aws/lambda/fusion-function-C","/aws/lambda/fusion-function-D","/aws/lambda/fusion-function-E","/aws/lambda/fusion-function-F","/aws/lambda/fusion-function-G"] //TODO
+//const logGroupNames = ["/aws/lambda/fusion-function-A","/aws/lambda/fusion-function-B","/aws/lambda/fusion-function-C","/aws/lambda/fusion-function-D","/aws/lambda/fusion-function-E","/aws/lambda/fusion-function-F","/aws/lambda/fusion-function-G"] //TODO
+const logGroupNames = ["/aws/lambda/fusion-function-AS","/aws/lambda/fusion-function-CA","/aws/lambda/fusion-function-CS","/aws/lambda/fusion-function-CSA","/aws/lambda/fusion-function-CSL","/aws/lambda/fusion-function-CT","/aws/lambda/fusion-function-CW","/aws/lambda/fusion-function-DJ","/aws/lambda/fusion-function-I","/aws/lambda/fusion-function-SE"] //TODO
 
 let fusionSet = new Set();
 
@@ -158,7 +159,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
     //let startTime = Date.now() - 300_000 // 5min for the IoT full test
     //let startTime = Date.now() - 3_600_000 // 30 Minutes for 300 invocations test
     //let startTime = Date.now() - 15_840_000 // 4.5h
-    let startTime = Date.now() - 86_400_000 // 48h
+    let startTime = Date.now() - process.argv[2]// 86_400_000 // 48h
     let endTime = Date.now()
 
     const allLogStreamsInput = {
@@ -214,8 +215,9 @@ async function getInvocationsFromLogGroup(logGroupName) {
                 }
                 await new Promise(resolve => setTimeout(resolve, 5000 * tries))
                 tries++
+                continue
             }
-            while(logEvents["nextForwardToken"]) {
+            while(logEvents && logEvents.hasOwnProperty("nextForwardToken")) {
                 //console.log("LogEvents has nextToken", logEvents["nextForwardToken"])
                 params["nextToken"] = logEvents["nextForwardToken"]
                 let newEvents = null
@@ -229,6 +231,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
                         }
                         await new Promise(resolve => setTimeout(resolve, 5000 * tries))
                         tries++
+                        continue
                     }
                 }
                 logEvents["events"] = logEvents["events"].concat(newEvents["events"])
@@ -405,5 +408,6 @@ async function getFromBucket(bucket, key) {
     return json
 }
 (async function() {
+    console.log("Param is", parseInt(process.argv[2]))
     await extract()
 })();

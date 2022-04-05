@@ -10,5 +10,6 @@ variable "bucket_name" {
 
 variable "use_case" {
   description = "The Name of the Folder where the function lives in"
-  default = "useCases/split"
+  default = "useCases/IoT"
+  # default = "useCases/split"
 }
