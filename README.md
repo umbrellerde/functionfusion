@@ -4,7 +4,7 @@ Fusionize is a framework that re- moves these concerns from developers by automa
 Developers only need to write the application code following a lightweight programming model and do not need to worry how the application is turned into functions
 
 This repository contains our example applications and the prototype for AWS Lambda.
-
+If you want to run this yourself, please check the `terraform/` folder.
 ## Research
 
 If you use this software in a publication, please cite it as:
@@ -50,3 +50,38 @@ Instead of detecting on images, we use a workload that is easier to fine-tune to
 
 Using the more efficient algorithm, calculating the first 4.5 million primes took \~1.2s and \~110MB of memory on the smallest available Lambda instance.
 The less effective algorithm took \~1.8s and \~110MB to calculate the first million primes.
+
+
+## Files
+```text
+├── coldstarts - function to generate coldstarts
+├── doTestrunColdstarts.sh - shell script to run cold start test
+├── doTestrun.sh - shell script to run normal test
+├── ExampleLog.md - Log that can be used to test extractor
+├── extractor - function that reads logs and creates call graph JSON
+├── .gitignore
+├── optimizer - function that reads call graph, creates new fusion setup, and overwrites ENV variables of fusion functions
+├── README.md
+├── statistics - statistics and graphs for the paper
+│   ├── finalstats.ipynb
+│   ├── results
+│   │   ├── finalTests
+│   │   └── initialTests
+│   └── stats.ipynb
+├── terraform - Read this for how to run tests
+├── tests - stuff that is only intended to run locally
+├── useCases - two example use cases
+│   ├── IoT
+│   │   ├── fusionables
+│   │   │   ├── Readme.md
+│   │   ├── handler.js
+│   │   ├── package.json
+│   │   └── Readme.md
+│   └── split
+│       ├── fusionables
+│       │   └── Readme.md
+│       ├── handler.js
+│       ├── package.json
+│       └── Readme.md
+└── Workload.md - description of IoT Use Case
+```
