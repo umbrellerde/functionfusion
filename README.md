@@ -11,7 +11,7 @@ If you use this software in a publication, please cite it as:
 
 ### Text
 
-T. Schirmer, J. Scheuner, T. Pfandzelter, D. Bermbach, **Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion**
+T. Schirmer, J. Scheuner, T. Pfandzelter, D. Bermbach, **Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion** arXiv:2204.11533 [cs.DC] 2022
 
 ### BibTeX
 
@@ -19,11 +19,12 @@ T. Schirmer, J. Scheuner, T. Pfandzelter, D. Bermbach, **Fusionize: Improving Se
 @article{schirmer_fusionize:2022,
     title = "Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion",
     author = "Schirmer, Trever and Scheuner, Joel and Pfandzelter, Tobias and Bermbach, David",
+    journal = "arXiv:2204.11533 [cs.DC]",
     year = 2022,
 }
 ```
 
-Please note that the manuscript is still pending publication.
+Please note that the manuscript is still pending publication, but a preprint is available at [arXiv](https://arxiv.org/abs/2204.11533).
 For a full list of publications, please see [our website](https://www.tu.berlin/en/mcc/research/publications/).
 
 ### License
