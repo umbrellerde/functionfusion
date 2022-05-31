@@ -1,5 +1,5 @@
 const AWS = require("aws-sdk");
-const { assert, time } = require("console");
+const { assert } = require("console");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -176,14 +176,29 @@ async function getInvocationsFromLogGroup(logGroupName) {
     const allLogStreamsInput = {
         logGroupName: logGroupName,
         limit: 50,
+        orderBy: "LastEventTime"
     }
 
     let allLogStreams = null
     try {
         allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
+        // If the last event was before start time delete the logs because they aren't interesting to us
+        if (allLogStreams["lastEventTimestamp"] < startTime) {
+            console.log("Ignoring the whole log group since it is too old")
+            // The last update happened before our start time, so this log group is not important anymore
+            // Since they are ordered by LastEventTime, we have found everything we need
+            allLogStreams["logStreams"] = []
+            // nextToken will also be null so there is no need to null that
+        }
+
         while (allLogStreams["nextToken"]) {
             console.log("Found a next Token:", allLogStreams["nextToken"])
             allLogStreamsInput["nextToken"] = allLogStreams["nextToken"]
+            if (allLogStreams["lastEventTimestamp"] < startTime) {
+                // The last update happened before our start time, so this log group is not important anymore
+                // Since they are ordered by LastEventTime, we have found everything we need
+                break
+            }
             let newLogStream = await cw.describeLogStreams(allLogStreamsInput).promise()
             allLogStreams["logStreams"] = allLogStreams["logStreams"].concat(newLogStream["logStreams"])
             allLogStreams["nextToken"] = newLogStream["nextToken"]
@@ -199,7 +214,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
 
     for (let i = 0; i < allLogStreams["logStreams"].length; i++) {
         if (i % 100 == 0) {
-            console.log("Reading Stream", i)
+            console.log("Reading Stream", i, "started", allLogStreams["logStreams"][i]["lastEventTimestamp"])
         }
         let stream = allLogStreams["logStreams"][i]
 
@@ -252,7 +267,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
             if (newEvents["nextForwardToken"] === logEvents["nextForwardToken"]) {
                 // Same response twice ==> Break
                 //console.log("Got same FW Token twice, breaking")
-                break;
+                break
             } else {
                 logEvents["nextForwardToken"] = newEvents["nextForwardToken"]
             }
@@ -335,11 +350,13 @@ function extractInvocation(invocationEvents) {
                 // Its relevant for timing stuff
                 // And looks like this:
                 // time-local-true-A-A 481.638
-                //   |    |     |  | | Called Function      
-                //   |    |     |  | Calling Function
-                //   |    |     | Is this a sync call? (Set by invocating function)  
-                //   |    | Local call or remote call?
-                //   | This is the marker that the logged string is relevant
+                //   |    |     |  | |  |
+                //   |    |     |  | |  |>Duration of call in ms
+                //   |    |     |  | |>Called Function      
+                //   |    |     |  |>Calling Function
+                //   |    |     |>Is this a sync call? (Set by invocating function)  
+                //   |    |>Local call or remote call?
+                //   |>This is the marker that the logged string is relevant
                 let [infoStr, time] = logLine.split(" ")
                 time = parseInt(time)
                 let info = infoStr.split("-")
@@ -372,6 +389,7 @@ function extractInvocation(invocationEvents) {
         }
         return newInvocation
     } catch (err) {
+        // The invocation could not be extracted - we don't really care since this almost never happens...
         console.error(err)
         return null
     }
