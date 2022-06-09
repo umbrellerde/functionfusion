@@ -74,7 +74,7 @@ async function saveInvocationsToS3(invocations) {
         console.log("...Currently merging Traces for fusiongroup", key)
         let newTraces = invocations.filter(inv => inv["fusionGroup"] == key)
         // Get existing Traces
-        let existingTraces = await getFromBucket(bucketName, `${key}.json`)
+        let existingTraces = await getFromBucket(bucketName, `traces/${key}.json`)
         //console.log("Got existing traces", existingTraces)
 
         // Check if the object is not empty
@@ -89,9 +89,6 @@ async function saveInvocationsToS3(invocations) {
         }
 
         //console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
-        // Merge together
-        // TODO Make it a Set and then export the set to a list
-        // TODO Better Merge the Old and New Traces
         // --- for every new Trace: Find all Invocations with same Trace Id. Find all Invocations with same currentFunction.
         // ------ For every call of newTraces: filter existingTraces for call with same properties. If it does not exist, add it here.
         // {
@@ -113,8 +110,6 @@ async function saveInvocationsToS3(invocations) {
         //         "sync": false,
         //         "time": 212
         //     }
-        // Old:
-        //let mergedTraces = [...new Set([...existingTraces, ...newTraces])] //Object.assign(existingTraces, newTraces)
 
         for (let i = 0; i < newTraces.length; i++) {
             let currNew = newTraces[i]
@@ -157,7 +152,7 @@ async function saveInvocationsToS3(invocations) {
 
         //console.log("Type of Merged Traces is", typeof mergedTraces)
         // Save to S3
-        let promise = uploadToBucket(bucketName, `${key}.json`, mergedTraces)
+        let promise = uploadToBucket(bucketName, `traces/${key}.json`, mergedTraces)
         promises.push(promise)
     }
 

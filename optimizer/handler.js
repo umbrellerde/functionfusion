@@ -100,14 +100,18 @@ exports.handler = async function (event) {
     let promises = []
     // fname=fusion-function-A ==> Function to handle is part after last "-"
     for (let fname of functionLogGroupNames) {
+        let currentConfiguration = await lambda.getFunctionConfiguration({
+            FunctionName: fname
+        }).promise()
+        console.log("Old Function Configuration", currentConfiguration)
+        let newEnv = currentConfiguration["Environment"]["Variables"]
+        newEnv["FUSION_SETUPS"] = JSON.stringify({TODO: true})
+        newEnv["FUSION_GROUPS"] = newConfiguration
+        console.log("New Configuration to be pushed", newEnv)
         let promise = lambda.updateFunctionConfiguration({
             FunctionName: fname,
             Environment: {
-                Variables: {
-                    'FUSION_GROUPS': newConfiguration,
-                    'S3_BUCKET_NAME': bucketName,
-                    'FUNCTION_TO_HANDLE': fname.split("-")[2]
-                }
+                Variables: newEnv
             }
         }).promise()
         promises.push(promise)
@@ -513,7 +517,7 @@ async function getAllSetups() {
     // Get all Json File Names
     let fileNames = []
     for (let object of objects.Contents) {
-        if (object.Key.includes(".json")) {
+        if (object.Key.includes(".json") && object.Key.includes("traces/")) {
             fileNames.push(object.Key)
         }
     }

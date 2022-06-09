@@ -9,7 +9,7 @@ output "function_name" {
   description = "Lambda functions"
 
   value = [
-    for function in aws_lambda_function.hello_world : function.arn
+    for function in module.fusionfunction.function : function.arn
   ]
 }
 
@@ -22,17 +22,13 @@ output "function_name" {
 output "lambda_urls_sync" {
   description = "All the URLs where the sync functions can be found"
 
-  value = [
-    for function in aws_api_gateway_resource.sync_root_resource : function.path
-  ]
+  value = module.fusionfunction.sync_paths
 }
 
 output "lambda_urls_async" {
   description = "All the URLs where the async functions can be found"
 
-  value = [
-    for function in aws_api_gateway_resource.async_root_resource : function.path
-  ]
+  value = module.fusionfunction.async_paths
 }
 
 output "base_url" {

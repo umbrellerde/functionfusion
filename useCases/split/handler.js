@@ -1,13 +1,39 @@
-const handlers = {}
-
 const https = require("https")
 const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
+const otherFunctions = JSON.parse(process.env["FUSION_SETUPS"])
+const testOtherFunctions = {
+    __TraceName : "Test123",
+    // callling function is A
+    A :{
+        // trying to call B
+        B: {
+            // in a sync call
+            sync: {
+                strategy: "local"
+            },
+            async: {
+                strategy: "remote",
+                url: "ASYNC-B-256"
+            }
+        },
+        C: {
+            sync: {
+                strategy: "local"
+            },
+            async: {
+                strategy: "remote",
+                url: "ASYNC-C-256"
+            }
+        }
+    }
+}
+
 let basePath = ""
 let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
-let fusionGroups = getFusionGroupsFromEnv()
+//let fusionGroups = getFusionGroupsFromEnv()
 let currentTraceId = null
 
 exports.handler = async function (event) {
@@ -22,13 +48,14 @@ exports.handler = async function (event) {
     if (!input.hasOwnProperty('traceId')) {
         let traceId = generateTraceId()
         input['traceId'] = traceId
-        currentTraceId = traceId
         firstStepInChain = true
-    } else {
-        // Necessary if this (non-root) Function calls another function
-        currentTraceId = input['traceId']
     }
-    console.log("TraceId", input['traceId'])
+
+    // Global variable used when calling another function
+    currentTraceId = input['traceId']
+
+    // Read by the extractor
+    console.log("TraceId", currentTraceId)
     console.log("FirstStep", firstStepInChain)
 
     // Invoke the function with await be cause execution stops when this function returns
@@ -45,7 +72,8 @@ exports.handler = async function (event) {
         },
         body: JSON.stringify({
             result: result,
-            hello: "World"    
+            from: functionToHandle,
+            root: firstStepInChain
         }),
     }
 }
@@ -58,15 +86,15 @@ exports.handler = async function (event) {
  */
 async function invokeRemote(step, data, sync = false) {
     let timeRemote = Date.now()
-    const [baseUrl, basePath] = await getUrlsFromEnv()
+    const [baseUrl, basePath] = await getUrlsForRemoteCall(step, sync)
     return new Promise((resolve, reject) => {
 
-        let invocationType = sync ? "SYNC-" : ""
+        let pathPart = otherFunctions[thisName][otherName][sync ? "sync" : "async"]["url"]
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
             // onlyStage/A to call A async
-            path: `/${basePath}/${invocationType}${step}`,
+            path: `/${basePath}/${pathPart}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -123,10 +151,10 @@ function getInputFromEvent(event) {
     }
 }
 
-async function getUrlsFromEnv() {
+async function getUrlsForRemoteCall(step, sync) {
+    // TODO get the url that should be used from somewhere else 
     if (basePath === "") {
-        // TODO we should get this from somewhere else
-        baseUrl = "onlyStage" //process.env["stage_name"]
+        baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancey, but we don't want to
 
         let apigw = new AWS.APIGateway();
         let promise = new Promise((resolve, reject) => {
@@ -146,16 +174,11 @@ async function getUrlsFromEnv() {
 }
 
 function getHandler(resource) {
-    if (handlers[resource]) {
-        return handlers[resource]
-    }
-    // TODO the reqiore os is cached by node - should not be necessary to cache it?
-    handlers[resource] = require(`./fusionables/${resource}/handler`)
-    return handlers[resource]
+    return require(`./fusionables/${resource}/handler`)
 }
 
-function isInSameFusionGroup(thisName, otherName) {
-    return fusionGroups.filter((e) => e.includes(thisName))[0].includes(otherName)
+function shouldCallTaskLocally(otherName, sync) {
+    return otherFunctions[thisName][otherName][sync ? "sync" : "async"]["strategy"] === "local"
 }
 
 
@@ -169,7 +192,7 @@ function isInSameFusionGroup(thisName, otherName) {
  */
 function callFunction(name, input, sync) {
     input['traceId'] = currentTraceId
-    if (isInSameFusionGroup(functionToHandle, name)) {
+    if (shouldCallTaskLocally(name, sync)) {
         console.log("I should call function", name, "with input", input, "and sync", sync, "locally")
         return invokeLocal(name, input, sync)
     } else {
@@ -183,17 +206,17 @@ function callFunction(name, input, sync) {
  */
 function generateTraceId() {
     // Elements within a group are joined by ".", between fusion groups there is a ","
-    let fusionSetupPart = fusionGroups.map(e => e.join(".")).join(",")
+    let fusionSetupPart = otherFunctions["__TraceName"]
     let randomTracePart = crypto.randomBytes(32).toString("hex")
 
     return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
 }
 
-function getFusionGroupsFromEnv() {
-    // result should be[["A", "B"], ["C"], ["D"]]
-    // from A.B,C,D
-    let str = process.env["FUSION_GROUPS"]
-    let groups = str.split(",")
-    let groupsSplitted = groups.map((e) => e.split("."))
-    return groupsSplitted
-}
+// function getFusionGroupsFromEnv() {
+//     // result should be[["A", "B"], ["C"], ["D"]]
+//     // from A.B,C,D
+//     let str = process.env["FUSION_GROUPS"]
+//     let groups = str.split(",")
+//     let groupsSplitted = groups.map((e) => e.split("."))
+//     return groupsSplitted
+// }

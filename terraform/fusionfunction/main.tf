@@ -1,12 +1,5 @@
-// TODO
-// API Gateway passed as var
-// s3 Bucket + Bucket Object as Variable
-// CloudWatch?? Passed as Variable
-// IAM Role to execute ect. as Variable
-// In Managers: Use Output from this Module function names.
-
 locals {
-  function_names = toset([for file in fileset("${path.module}/../${var.use_case}/fusionables/**", "handler.js") : basename(dirname(file))])
+  function_names = toset([for file in fileset("${path.root}/../${var.use_case}/fusionables/**", "handler.js") : basename(dirname(file))])
   // See https://www.daveperrett.com/articles/2021/08/19/nested-for-each-with-terraform/
   // Use: for_each      = { for entry in local.memory_sizes_function_names: "${entry.function_name}.${entry.privilege}" => entry }
   // Use: each.value.
@@ -32,7 +25,7 @@ resource "aws_lambda_function" "fusion_function" {
   runtime = "nodejs14.x"
   handler = "handler.handler"
 
-  source_code_hash = data.archive_file.lambda_fusion_manager.output_base64sha256
+  source_code_hash = var.source_code_archive.output_base64sha256
 
   role = var.lambda_exec.arn
 
@@ -45,22 +38,21 @@ resource "aws_lambda_function" "fusion_function" {
       FUNCTION_TO_HANDLE = each.value.function_name
       MEMORY_SIZE = each.value.memory_size
       // THIS IS IMPORTANT: What should the initial fusion groups look like? Seperating it with a "." would put every task together
-      FUSION_GROUPS = join(",", local.function_names)
+      //FUSION_GROUPS = join(",", [for fname in local.function_names: "${fname}"])
+      // Initial Setup of Function Sizes: Give them the same size as the calling function initially
+      FUSION_SETUPS = "TODO"
     }
   }
 }
 
 resource "aws_cloudwatch_log_group" "fusion_function" {
-  for_each = local.function_names
-  name     = "/aws/lambda/${aws_lambda_function.fusion_function[each.value].function_name}"
+  for_each = local.memory_sizes_function_names
+  name     = "/aws/lambda/${aws_lambda_function.fusion_function[each.key].function_name}"
 
   retention_in_days = 1
 }
 
 // API Gateway v1 for async invocations
-
-// TODO require Author-Header for all Apigateway calls
-
 resource "aws_api_gateway_resource" "sync_root_resource" {
   for_each    = local.memory_sizes_function_names
   path_part   = "SYNC-${each.value.function_name}-${each.value.memory_size}"
@@ -85,6 +77,19 @@ resource "aws_lambda_permission" "lambda_permission" {
   # The /*/*/* part allows invocation from any stage, method and resource path
   # within API Gateway REST API.
   source_arn = "${var.api.execution_arn}/*/*/*"
+}
+
+resource "aws_api_gateway_method" "sync_proxy_root" {
+  rest_api_id   = var.api.id
+  resource_id   = var.api.root_resource_id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+
+resource "aws_api_gateway_request_validator" "validator" {
+  name        = "function-validator"
+  rest_api_id = var.api.id
 }
 
 module "async_post_endpoint" {

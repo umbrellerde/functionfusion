@@ -85,15 +85,12 @@ resource "aws_api_gateway_rest_api" "api" {
   name = "lambda-api"
 }
 
-resource "aws_api_gateway_request_validator" "validator" {
-  name        = "function-validator"
-  rest_api_id = aws_api_gateway_rest_api.api.id
-}
-
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root, aws_api_gateway_method.sync_proxy, aws_api_gateway_method.sync_proxy_root]
+  depends_on = [
+    module.fusionfunction
+  ]
 
   triggers = {
     redeployment = sha1(jsonencode(aws_api_gateway_rest_api.api.body))
@@ -116,11 +113,15 @@ resource "aws_cloudwatch_log_group" "apigw" {
   retention_in_days = 1
 }
 
-// Sync Stuff
+// Function Module
 
-resource "aws_api_gateway_method" "sync_proxy_root" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_rest_api.api.root_resource_id
-  http_method   = "POST"
-  authorization = "NONE"
+module "fusionfunction" {
+  source = "./fusionfunction"
+  use_case = var.use_case
+  memory_sizes = [128]
+  lambda_bucket = aws_s3_bucket.lambda_bucket
+  lambda_fusion_manager = aws_s3_bucket_object.lambda_fusion_manager
+  lambda_exec = aws_iam_role.lambda_exec
+  source_code_archive = data.archive_file.lambda_fusion_manager
+  api = aws_api_gateway_rest_api.api
 }

@@ -9,6 +9,11 @@ let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
 let fusionGroups = getFusionGroupsFromEnv()
 let currentTraceId = null
+const functionSizeMap = {}
+process.env["FUSION_GROUPS_SIZES"].split(",").forEach(e => {
+    let s = e.split(":")
+    functionSizeMap[s[0]] = s[1]
+})
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -35,7 +40,7 @@ exports.handler = async function (event) {
     let timeBase = Date.now()
     let result = await invokeLocal(functionToHandle, input, true)
     console.log("time-base", Date.now() - timeBase)
-
+    console.log("function map", functionSizeMap)
     console.log("Result", result)
 
     return {
@@ -45,7 +50,8 @@ exports.handler = async function (event) {
         },
         body: JSON.stringify({
             result: result,
-            hello: "World"    
+            hello: "World",
+            map: functionSizeMap
         }),
     }
 }
@@ -62,11 +68,12 @@ async function invokeRemote(step, data, sync = false) {
     return new Promise((resolve, reject) => {
 
         let invocationType = sync ? "SYNC-" : ""
+        let memory = getMemoryForFunction(step)
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
             // onlyStage/A to call A async
-            path: `/${basePath}/${invocationType}${step}`,
+            path: `/${basePath}/${invocationType}${step}-${memory}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -155,9 +162,7 @@ function getHandler(resource) {
 }
 
 function isInSameFusionGroup(thisName, otherName) {
-    console.log("isInSameFusionGroup? FusionGroups:", fusionGroups, "thisName / otherName", thisName, otherName, "filtered:",
-    fusionGroups.find((e) => e.includes(thisName)))
-    return fusionGroups.find((e) => e.includes(thisName)).includes(otherName)
+    return fusionGroups.filter((e) => e.includes(thisName))[0].includes(otherName)
 }
 
 
@@ -198,4 +203,8 @@ function getFusionGroupsFromEnv() {
     let groups = str.split(",")
     let groupsSplitted = groups.map((e) => e.split("."))
     return groupsSplitted
+}
+
+function getMemoryForFunction(step) {
+    return functionSizeMap[step]
 }

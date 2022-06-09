@@ -23,7 +23,7 @@ exports.handler = async function (event) {
         if (results != null) {
             break;
         }
-        if (run > 0) { // TODO change to 10
+        if (run > 10) {
             return {
                 statusCode: 500,
                 headers: {

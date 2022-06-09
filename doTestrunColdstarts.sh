@@ -68,6 +68,6 @@ time node "$SCRIPT_DIR/tests/extractLocally.js" 86400000
 echo "Getting Results!"
 echo "Bucket is: $s3_bucket"
 echo "Copy command is aws s3 cp s3://$s3_bucket $SCRIPT_DIR/statistics/results --recursive --exclude *.zip"
-aws s3 cp "s3://$s3_bucket" "$SCRIPT_DIR/statistics/results" --recursive --exclude "*.zip"
+aws s3 cp "s3://$s3_bucket/traces" "$SCRIPT_DIR/statistics/results" --recursive --exclude "*.zip"
 
 # aws s3 cp "s3://(terraform output -raw lambda_bucket_name)" "./statistics/results" --recursive --exclude "*.zip"

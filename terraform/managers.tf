@@ -32,7 +32,7 @@ resource "aws_lambda_function" "optimizer" {
     variables = {
       NODE_OPTIONS = "--enable-source-maps"
       S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
-      FUNCTION_NAMES = join(",",[for function in aws_lambda_function.hello_world : "${function.function_name}"])
+      FUNCTION_NAMES = join(",",module.fusionfunction.function_names)
     }
   }
 }
@@ -115,7 +115,7 @@ resource "aws_lambda_function" "extractor" {
     variables = {
       NODE_OPTIONS = "--enable-source-maps"
       S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
-      LOG_GROUP_NAMES = join(",",[for function in aws_lambda_function.hello_world : "/aws/lambda/${function.function_name}"])
+      LOG_GROUP_NAMES = join(",",[for function_name in module.fusionfunction.function_names : "/aws/lambda/${function_name}"])
     }
   }
 }
@@ -198,7 +198,7 @@ resource "aws_lambda_function" "coldstarts" {
     variables = {
       NODE_OPTIONS = "--enable-source-maps"
       S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
-      FUNCTION_NAMES = join(",",[for function in aws_lambda_function.hello_world : "${function.function_name}"])
+      FUNCTION_NAMES = join(",",[for function_name in module.fusionfunction.function_names : "${function_name}"])
     }
   }
 }
