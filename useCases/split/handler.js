@@ -3,32 +3,34 @@ const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
 const otherFunctions = JSON.parse(process.env["FUSION_SETUPS"])
-const testOtherFunctions = {
-    __TraceName : "Test123",
+/*const testOtherFunctions = {
+    traceName : "Test123",
     // callling function is A
-    A :{
-        // trying to call B
-        B: {
-            // in a sync call
-            sync: {
-                strategy: "local"
+    rules: {
+        A :{
+            // trying to call B
+            B: {
+                // in a sync call
+                sync: {
+                    strategy: "local"
+                },
+                async: {
+                    strategy: "remote",
+                    url: "ASYNC-B-256"
+                }
             },
-            async: {
-                strategy: "remote",
-                url: "ASYNC-B-256"
-            }
-        },
-        C: {
-            sync: {
-                strategy: "local"
-            },
-            async: {
-                strategy: "remote",
-                url: "ASYNC-C-256"
+            C: {
+                sync: {
+                    strategy: "local"
+                },
+                async: {
+                    strategy: "remote",
+                    url: "ASYNC-C-256"
+                }
             }
         }
     }
-}
+}*/
 
 let basePath = ""
 let baseUrl = ""
@@ -89,7 +91,7 @@ async function invokeRemote(step, data, sync = false) {
     const [baseUrl, basePath] = await getUrlsForRemoteCall(step, sync)
     return new Promise((resolve, reject) => {
 
-        let pathPart = otherFunctions[thisName][otherName][sync ? "sync" : "async"]["url"]
+        let pathPart = otherFunctions["rules"][functionToHandle][step][sync ? "sync" : "async"]["url"]
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
@@ -178,7 +180,7 @@ function getHandler(resource) {
 }
 
 function shouldCallTaskLocally(otherName, sync) {
-    return otherFunctions[thisName][otherName][sync ? "sync" : "async"]["strategy"] === "local"
+    return otherFunctions["rules"][functionToHandle][otherName][sync ? "sync" : "async"]["strategy"] === "local"
 }
 
 
@@ -206,7 +208,7 @@ function callFunction(name, input, sync) {
  */
 function generateTraceId() {
     // Elements within a group are joined by ".", between fusion groups there is a ","
-    let fusionSetupPart = otherFunctions["__TraceName"]
+    let fusionSetupPart = otherFunctions["traceName"]
     let randomTracePart = crypto.randomBytes(32).toString("hex")
 
     return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`

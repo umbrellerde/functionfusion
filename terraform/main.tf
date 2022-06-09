@@ -39,7 +39,7 @@ data "archive_file" "lambda_fusion_manager" {
 
 resource "aws_s3_bucket_object" "lambda_fusion_manager" {
   bucket = aws_s3_bucket.lambda_bucket.id
-  key    = "function.zip"
+  key    = "originalCode/function.zip"
   source = data.archive_file.lambda_fusion_manager.output_path
   etag   = filemd5(data.archive_file.lambda_fusion_manager.output_path)
 }

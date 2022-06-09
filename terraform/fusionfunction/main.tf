@@ -7,11 +7,25 @@ locals {
     for fname in local.function_names : [
       for size in var.memory_sizes : {
         function_name = fname
-        memory_size = size
+        memory_size   = size
       }
     ]
   ]))
-  memory_sizes_function_names = {for i, v in local.__memory_sizes_function_names:  i => v}
+  memory_sizes_function_names = { for i, v in local.__memory_sizes_function_names : i => v }
+  default_fusion_setups = {
+    "traceName" = "default",
+    "rules" = {
+      // Create entry from all keys to all keys.
+      for i, v in local.function_names : v => { for i, v in local.function_names : v => {
+        "sync" = {
+          "strategy" = "local"
+        }
+        "async" = {
+          "strategy" = "local"
+        }
+      } }
+    }
+  }
 }
 
 // Lambda Function
@@ -29,18 +43,18 @@ resource "aws_lambda_function" "fusion_function" {
 
   role = var.lambda_exec.arn
 
-  timeout = 60
+  timeout     = 60
   memory_size = each.value.memory_size
 
   environment {
     variables = {
-      S3_BUCKET_NAME = var.lambda_bucket.id
+      S3_BUCKET_NAME     = var.lambda_bucket.id
       FUNCTION_TO_HANDLE = each.value.function_name
-      MEMORY_SIZE = each.value.memory_size
+      MEMORY_SIZE        = each.value.memory_size
       // THIS IS IMPORTANT: What should the initial fusion groups look like? Seperating it with a "." would put every task together
       //FUSION_GROUPS = join(",", [for fname in local.function_names: "${fname}"])
       // Initial Setup of Function Sizes: Give them the same size as the calling function initially
-      FUSION_SETUPS = "TODO"
+      FUSION_SETUPS = jsonencode(local.default_fusion_setups)
     }
   }
 }

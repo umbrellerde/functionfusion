@@ -12,6 +12,8 @@ const functionLogGroupNames = process.env["FUNCTION_NAMES"].split(",")
 const setupFromList = (list) => list.map(e => e.sort().join(".")).sort().join(",")
 const listFromSetup = (setup) => setup.split(",").map(g => g.split("."))
 
+// TODO completely rewrite this
+
 exports.handler = async function (event) {
 
     let deleteStartInvocations = event["deleteSeconds"]
