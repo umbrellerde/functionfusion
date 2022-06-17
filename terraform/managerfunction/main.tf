@@ -23,16 +23,16 @@ resource "aws_lambda_function" "manager_function" {
 
   source_code_hash = data.archive_file.zip.output_base64sha256
 
-  role = aws_iam_role.lambda_manager.arn
+  role = aws_iam_role.iam_role.arn
 
   timeout = var.timeout
   memory_size = var.memory_size
 
   environment {
     variables = merge({
-      S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
-      FUNCTION_NAMES = join(",",[for function_name in module.fusionfunction.function_names : "${function_name}"])
-    }, var.environment)
+      S3_BUCKET_NAME = var.lambda_bucket.id
+      FUNCTION_NAMES = join(",",[for function_name in var.function_names : "${function_name}"])
+    }, var.env)
   }
 }
 

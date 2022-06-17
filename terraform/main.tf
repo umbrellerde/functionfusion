@@ -89,7 +89,7 @@ resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
   depends_on = [
-    module.fusionfunction
+    module.fusionfunction, module.optideployer, module.coldstarts, module.optimizer
   ]
 
   triggers = {

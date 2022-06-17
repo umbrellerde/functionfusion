@@ -15,7 +15,7 @@ variable "memory_size" {
   default = 128
 }
 
-varable "lambda_bucket" {
+variable "lambda_bucket" {
     type = object({
         id = string
     })
@@ -25,4 +25,10 @@ varable "lambda_bucket" {
 variable "env" {
   type = map
   description = "Other Env Variables that should be added to Env"
+  default = {}
+}
+
+variable "function_names" {
+    type = list
+    description = "List of all function names"
 }
