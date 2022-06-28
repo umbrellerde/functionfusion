@@ -89,7 +89,7 @@ async function getLocalTasksOfFunction(fname) {
     // TODO this is not a good solution
     console.log("All Envs are: ", currentConfiguration["Environment"]["Variables"])
     console.log("Fusion Settings RAW are:", currentConfiguration["Environment"]["Variables"]["FUSION_SETUPS"])
-    let functionSettings = JSON.parse(currentConfiguration["Environment"]["Variables"]["FUSION_SETUPS"])["rules"][fname.split("-")[2]];
+    let functionSettings = Buffer.from(currentConfiguration["Environment"]["Variables"]["FUSION_SETUPS"], "base64").toJSON()["rules"][fname.split("-")[2]];
     // We only need the tasks that are actually executed locally to be in the ZIP
     // Get a list of local tasks (sync.strategy == local or async.strategy == local)
     console.log("Function Settings for function are:", functionSettings);

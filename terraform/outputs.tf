@@ -25,11 +25,24 @@ output "lambda_urls_sync" {
   value = module.fusionfunction.sync_paths
 }
 
+output "lambda_urls_sync_default" {
+  description = "All the URLs where the DEFAULT sync functions can be found"
+
+  value = module.fusionfunction.default_sync_paths
+}
+
 output "lambda_urls_async" {
   description = "All the URLs where the async functions can be found"
 
   value = module.fusionfunction.async_paths
 }
+
+output "lambda_urls_async_default" {
+  description = "All the URLs where the DEFAULT async functions can be found"
+
+  value = module.fusionfunction.default_async_paths
+}
+
 
 output "base_url" {
   description = "Base URL of API GW"

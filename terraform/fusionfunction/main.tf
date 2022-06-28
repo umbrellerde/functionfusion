@@ -12,6 +12,12 @@ locals {
     ]
   ]))
   memory_sizes_function_names = { for i, v in local.__memory_sizes_function_names : i => v }
+  // e.g. {"0": {function_name: "A", memory_size: 128}, ...}
+
+  // Memory Sizes Function Names is a map that has numbers as keys and the object with function_name and memory_size as value
+  // We need the indices of the initial default functions...
+  // Solution: Get the list of keys in memory_sizes_function_names that have the minimum (== first specified...) memory size. Iterate over it and call memory_sizes_function_names[key]
+  default_function_keys = toset(compact([for i, v in local.__memory_sizes_function_names : local.memory_sizes_function_names[i].memory_size == max(var.memory_sizes...) ? "${i}" : ""]))
   default_fusion_setups = {
     "traceName" = "default",
     "rules" = {
@@ -21,7 +27,8 @@ locals {
           "strategy" = "local"
         }
         "async" = {
-          "strategy" = "local"
+          "strategy" = "remote",
+          "url" = "ASYNC-${v}"
         }
       } }
     }
@@ -54,7 +61,7 @@ resource "aws_lambda_function" "fusion_function" {
       // THIS IS IMPORTANT: What should the initial fusion groups look like? Seperating it with a "." would put every task together
       //FUSION_GROUPS = join(",", [for fname in local.function_names: "${fname}"])
       // Initial Setup of Function Sizes: Give them the same size as the calling function initially
-      FUSION_SETUPS = jsonencode(local.default_fusion_setups)
+      FUSION_SETUPS = base64encode(jsonencode(local.default_fusion_setups))
     }
   }
 }
@@ -64,21 +71,6 @@ resource "aws_cloudwatch_log_group" "fusion_function" {
   name     = "/aws/lambda/${aws_lambda_function.fusion_function[each.key].function_name}"
 
   retention_in_days = 1
-}
-
-// API Gateway v1 for async invocations
-resource "aws_api_gateway_resource" "sync_root_resource" {
-  for_each    = local.memory_sizes_function_names
-  path_part   = "SYNC-${each.value.function_name}-${each.value.memory_size}"
-  parent_id   = var.api.root_resource_id
-  rest_api_id = var.api.id
-}
-
-resource "aws_api_gateway_resource" "async_root_resource" {
-  for_each    = local.memory_sizes_function_names
-  path_part   = "${each.value.function_name}-${each.value.memory_size}"
-  parent_id   = var.api.root_resource_id
-  rest_api_id = var.api.id
 }
 
 resource "aws_lambda_permission" "lambda_permission" {
@@ -93,16 +85,16 @@ resource "aws_lambda_permission" "lambda_permission" {
   source_arn = "${var.api.execution_arn}/*/*/*"
 }
 
-resource "aws_api_gateway_method" "sync_proxy_root" {
-  rest_api_id   = var.api.id
-  resource_id   = var.api.root_resource_id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-
+// Only API Gateway v1 for sync and async invocations below this line... Async is (mostly) realized via a module.
 resource "aws_api_gateway_request_validator" "validator" {
   name        = "function-validator"
+  rest_api_id = var.api.id
+}
+// Async Endpoint with Memory Size
+resource "aws_api_gateway_resource" "async_root_resource" {
+  for_each    = local.memory_sizes_function_names
+  path_part   = "${each.value.function_name}-${each.value.memory_size}"
+  parent_id   = var.api.root_resource_id
   rest_api_id = var.api.id
 }
 
@@ -121,7 +113,47 @@ module "async_post_endpoint" {
   enable_async_lambda_integration = true
 }
 
+// Ignore The Memory Size and just use the smallest one (initially)
+resource "aws_api_gateway_resource" "default_async_root_resource" {
+  for_each    = local.default_function_keys
+  // The key-th index of the memory_size_function_names-variable is found by local.default_function_keys
+  path_part   = local.memory_sizes_function_names[each.key].function_name
+  parent_id   = var.api.root_resource_id
+  rest_api_id = var.api.id
+}
+
+module "default_async_post_endpoint" {
+  source                          = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
+  for_each                        = local.default_function_keys
+  http_method                     = "POST"
+  integration_type                = "AWS"
+  integration_http_method         = "POST"
+  async_response_status_code      = "202"
+  resource_path                   = aws_api_gateway_resource.default_async_root_resource[each.key].path_part
+  resource_id                     = aws_api_gateway_resource.default_async_root_resource[each.key].id
+  rest_api_id                     = var.api.id
+  validator_id                    = aws_api_gateway_request_validator.validator.id
+  lambda_invoke_arn               = aws_lambda_function.fusion_function[each.key].invoke_arn
+  enable_async_lambda_integration = true
+}
+
 // Add the sync lambda manually since the module apparently only supports async invocation.
+
+// First all Memory Sizes
+resource "aws_api_gateway_resource" "sync_root_resource" {
+  for_each    = local.memory_sizes_function_names
+  path_part   = "SYNC-${each.value.function_name}-${each.value.memory_size}"
+  parent_id   = var.api.root_resource_id
+  rest_api_id = var.api.id
+}
+
+
+resource "aws_api_gateway_method" "sync_proxy_root" {
+  rest_api_id   = var.api.id
+  resource_id   = var.api.root_resource_id
+  http_method   = "POST"
+  authorization = "NONE"
+}
 resource "aws_api_gateway_method" "sync_proxy" {
   for_each      = local.memory_sizes_function_names
   rest_api_id   = var.api.id
@@ -130,6 +162,16 @@ resource "aws_api_gateway_method" "sync_proxy" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_integration" "sync_lambda_root" {
+  for_each                = local.memory_sizes_function_names
+  rest_api_id             = var.api.id
+  resource_id             = aws_api_gateway_method.sync_proxy_root.resource_id
+  http_method             = aws_api_gateway_method.sync_proxy_root.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.fusion_function[each.key].invoke_arn
+}
 resource "aws_api_gateway_integration" "sync_lambda" {
   for_each    = local.memory_sizes_function_names
   rest_api_id = var.api.id
@@ -141,11 +183,40 @@ resource "aws_api_gateway_integration" "sync_lambda" {
   uri                     = aws_lambda_function.fusion_function[each.key].invoke_arn
 }
 
-resource "aws_api_gateway_integration" "sync_lambda_root" {
-  for_each                = local.memory_sizes_function_names
+// Then Without Memory Sizes
+
+resource "aws_api_gateway_resource" "default_sync_root_resource" {
+  for_each    = local.default_function_keys
+  path_part   = "SYNC-${local.memory_sizes_function_names[each.key].function_name}"
+  parent_id   = var.api.root_resource_id
+  rest_api_id = var.api.id
+}
+
+
+resource "aws_api_gateway_method" "default_sync_proxy" {
+  for_each      = local.default_function_keys
+  rest_api_id   = var.api.id
+  resource_id   = aws_api_gateway_resource.default_sync_root_resource[each.key].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "default_sync_lambda_root" {
+  for_each                = local.default_function_keys
   rest_api_id             = var.api.id
   resource_id             = aws_api_gateway_method.sync_proxy_root.resource_id
   http_method             = aws_api_gateway_method.sync_proxy_root.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.fusion_function[each.key].invoke_arn
+}
+resource "aws_api_gateway_integration" "default_sync_lambda" {
+  for_each    = local.default_function_keys
+  rest_api_id = var.api.id
+  resource_id = aws_api_gateway_method.default_sync_proxy[each.key].resource_id
+  http_method = aws_api_gateway_method.default_sync_proxy[each.key].http_method
+
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.fusion_function[each.key].invoke_arn

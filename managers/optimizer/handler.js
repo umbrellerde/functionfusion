@@ -99,6 +99,7 @@ exports.handler = async function (event) {
     console.log("Done Testing Setups. New Configuration is", newConfiguration)
 
     // Update the Env Variables of all Functions
+    // TODO get default memory size and change the default route
     let promises = []
     // fname=fusion-function-A ==> Function to handle is part after last "-"
     for (let fname of functionLogGroupNames) {

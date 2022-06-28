@@ -2,7 +2,7 @@ const https = require("https")
 const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
-const otherFunctions = JSON.parse(process.env["FUSION_SETUPS"])
+const otherFunctions = Buffer.from(process.env["FUSION_SETUPS"], "base64").toJSON()
 /*const testOtherFunctions = {
     traceName : "Test123",
     // callling function is A
@@ -154,9 +154,9 @@ function getInputFromEvent(event) {
 }
 
 async function getUrlsForRemoteCall(step, sync) {
-    // TODO get the url that should be used from somewhere else 
+    // TODO get the url that should be used from somewhere else, maybe the optimizer/coldstarts could get them and put them into an env var whenever they run? This means that the fusion handler only needs to get the url from APIGw during the first run. On the other hand this greatly reduces experiment validity so let's not do it maybe.
     if (basePath === "") {
-        baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancey, but we don't want to
+        baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancy, but we don't want to
 
         let apigw = new AWS.APIGateway();
         let promise = new Promise((resolve, reject) => {

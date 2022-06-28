@@ -2,8 +2,8 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.74"
-
+      //version = "~> 3.74"
+      version = "~> 4.20"
     }
     random = {
       source  = "hashicorp/random"
@@ -26,22 +26,32 @@ resource "random_pet" "lambda_bucket_name" {
 // Bucket with Lambda Source Code in it
 resource "aws_s3_bucket" "lambda_bucket" {
   bucket        = random_pet.lambda_bucket_name.id
-  acl           = "private"
   force_destroy = true
+}
+
+resource "aws_s3_bucket_acl" "lambda_bucket_acl" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  acl    = "private"
 }
 
 data "archive_file" "lambda_fusion_manager" {
   type = "zip"
 
   source_dir  = "${path.module}/../${var.use_case}"
-  output_path = "${path.module}/../function.zip"
+  output_path = "${path.module}/deployment_artifacts/function.zip"
 }
 
-resource "aws_s3_bucket_object" "lambda_fusion_manager" {
+resource "aws_s3_object" "lambda_fusion_manager" {
   bucket = aws_s3_bucket.lambda_bucket.id
   key    = "originalCode/function.zip"
   source = data.archive_file.lambda_fusion_manager.output_path
   etag   = filemd5(data.archive_file.lambda_fusion_manager.output_path)
+}
+
+resource "aws_s3_bucket_object" "configuration_metadata" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  key = "metadata/configurationMetadata.json"
+  content = jsonencode({default = module.fusionfunction.default_fusion_setups})
 }
 
 resource "aws_iam_role" "lambda_exec" {
@@ -118,9 +128,9 @@ resource "aws_cloudwatch_log_group" "apigw" {
 module "fusionfunction" {
   source = "./fusionfunction"
   use_case = var.use_case
-  memory_sizes = [128]
+  memory_sizes = [128, 256]
   lambda_bucket = aws_s3_bucket.lambda_bucket
-  lambda_fusion_manager = aws_s3_bucket_object.lambda_fusion_manager
+  lambda_fusion_manager = aws_s3_object.lambda_fusion_manager
   lambda_exec = aws_iam_role.lambda_exec
   source_code_archive = data.archive_file.lambda_fusion_manager
   api = aws_api_gateway_rest_api.api

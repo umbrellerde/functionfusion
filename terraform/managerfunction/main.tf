@@ -2,12 +2,12 @@ data "archive_file" "zip" {
   type = "zip"
 
   source_dir  = "${path.root}/../managers/${var.manager_name}"
-  output_path = "${path.root}/../managers/${var.manager_name}.zip"
+  output_path = "${path.root}/deployment_artifacts/${var.manager_name}.zip"
 }
 
 resource "aws_s3_bucket_object" "object" {
   bucket = var.lambda_bucket.id
-  key    = "${var.manager_name}.zip"
+  key    = "originalCode/${var.manager_name}.zip"
   source = data.archive_file.zip.output_path
   etag   = filemd5(data.archive_file.zip.output_path)
 }

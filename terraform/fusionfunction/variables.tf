@@ -6,7 +6,7 @@ variable "use_case" {
 
 // Memory Sizes
 variable "memory_sizes" {
-  description = "List of all memory sizes that should be deployed"
+  description = "List of all memory sizes that should be deployed. The first specified size is the first default"
   default     = [128, 256, 512, 1024]
 }
 

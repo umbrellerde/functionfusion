@@ -283,6 +283,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
             } else if ((!searchingForStart) && currentEvent["message"].includes("REPORT RequestId: ")) {
                 //console.log("----- Found Report Message!", currentEvent)
                 searchingForStart = true
+                // TODO Remote
                 let newInvocation = extractInvocation(logEvents["events"].slice(startI, i + 1))
                 if (newInvocation != null) {
                     invocations.push(newInvocation)
@@ -397,7 +398,7 @@ function extractInvocation(invocationEvents) {
  * @param {Object|Array} body The body that will be JSON.stringify-ed to save to s3 
  */
 async function uploadToBucket(bucket, key, body) {
-    return await s3.upload({
+    return s3.upload({
         Bucket: bucket,
         Key: key,
         Body: JSON.stringify(body),
