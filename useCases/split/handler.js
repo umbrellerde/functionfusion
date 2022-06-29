@@ -2,7 +2,7 @@ const https = require("https")
 const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
-const otherFunctions = Buffer.from(process.env["FUSION_SETUPS"], "base64").toJSON()
+const otherFunctions = require("setup.json")
 /*const testOtherFunctions = {
     traceName : "Test123",
     // callling function is A

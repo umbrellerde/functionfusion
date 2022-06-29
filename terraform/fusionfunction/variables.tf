@@ -17,13 +17,6 @@ variable "lambda_bucket" {
   })
 }
 
-variable "lambda_fusion_manager" {
-  description = "S3 Bucket Object that should be deployed as function code"
-  type = object({
-    key = string
-  })
-}
-
 variable "lambda_exec" {
   description = "IAM Role that the functions should assume"
   type = object({
@@ -39,11 +32,4 @@ variable "api" {
     execution_arn = string
   })
   
-}
-
-variable "source_code_archive" {
-  description = "data.archive_file that contains the function code"
-  type = object({
-    output_base64sha256 = string
-  })
 }

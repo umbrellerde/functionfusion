@@ -18,7 +18,7 @@ locals {
   // We need the indices of the initial default functions...
   // Solution: Get the list of keys in memory_sizes_function_names that have the minimum (== first specified...) memory size. Iterate over it and call memory_sizes_function_names[key]
   default_function_keys = toset(compact([for i, v in local.__memory_sizes_function_names : local.memory_sizes_function_names[i].memory_size == max(var.memory_sizes...) ? "${i}" : ""]))
-  default_fusion_setups = {
+  default_fusion_setup = {
     "traceName" = "default",
     "rules" = {
       // Create entry from all keys to all keys.
@@ -28,11 +28,43 @@ locals {
         }
         "async" = {
           "strategy" = "remote",
-          "url" = "ASYNC-${v}"
+          "url" = "${v}"
         }
       } }
     }
   }
+}
+
+// Default Configuration Metadata already
+resource "aws_s3_object" "configuration_metadata" {
+  bucket = var.lambda_bucket.id
+  key = "metadata/configurationMetadata.json"
+  // TODO is default really a good name for the initial setup? Maybe encode as date or whatever?
+  content = jsonencode({default = local.default_fusion_setup})
+}
+
+// Archive File in S3 with a twist - it contains the configuration json as file
+resource "local_file" "lambda_default_fusion_setup_json" {
+  content = jsonencode(local.default_fusion_setup)
+  filename = "${path.root}/../${var.use_case}/setup.json"
+}
+
+data "archive_file" "source_code_archive" {
+  type = "zip"
+
+  depends_on = [
+    local_file.lambda_default_fusion_setup_json
+  ]
+
+  source_dir  = "${path.root}/../${var.use_case}"
+  output_path = "${path.root}/deployment_artifacts/function.zip"
+}
+
+resource "aws_s3_object" "lambda_fusion_manager" {
+  bucket = var.lambda_bucket.id
+  key    = "originalCode/function.zip"
+  source = data.archive_file.source_code_archive.output_path
+  etag   = filemd5(data.archive_file.source_code_archive.output_path)
 }
 
 // Lambda Function
@@ -41,12 +73,12 @@ resource "aws_lambda_function" "fusion_function" {
   function_name = "fusion-function-${each.value.function_name}-${each.value.memory_size}"
 
   s3_bucket = var.lambda_bucket.id
-  s3_key    = var.lambda_fusion_manager.key
+  s3_key    = aws_s3_object.lambda_fusion_manager.key
 
   runtime = "nodejs14.x"
   handler = "handler.handler"
 
-  source_code_hash = var.source_code_archive.output_base64sha256
+  source_code_hash = data.archive_file.source_code_archive.output_base64sha256
 
   role = var.lambda_exec.arn
 
@@ -58,10 +90,6 @@ resource "aws_lambda_function" "fusion_function" {
       S3_BUCKET_NAME     = var.lambda_bucket.id
       FUNCTION_TO_HANDLE = each.value.function_name
       MEMORY_SIZE        = each.value.memory_size
-      // THIS IS IMPORTANT: What should the initial fusion groups look like? Seperating it with a "." would put every task together
-      //FUSION_GROUPS = join(",", [for fname in local.function_names: "${fname}"])
-      // Initial Setup of Function Sizes: Give them the same size as the calling function initially
-      FUSION_SETUPS = base64encode(jsonencode(local.default_fusion_setups))
     }
   }
 }

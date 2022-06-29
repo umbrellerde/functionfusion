@@ -6,7 +6,7 @@ module "optimizer" {
   lambda_bucket = aws_s3_bucket.lambda_bucket
   function_names = module.fusionfunction.function_names
   env = {
-    CONFIGURATION_METADATA = aws_s3_bucket_object.configuration_metadata.key
+    CONFIGURATION_METADATA = module.fusionfunction.configuration_metadata.key
   }
 }
 
@@ -35,6 +35,6 @@ module "optideployer" {
   lambda_bucket = aws_s3_bucket.lambda_bucket
   function_names = module.fusionfunction.function_names
   env = {
-    FUNCTION_ZIP_OBJECT = aws_s3_object.lambda_fusion_manager.key
+    FUNCTION_ZIP_OBJECT = module.fusionfunction.lambda_fusion_manager.key
   }
 }

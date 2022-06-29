@@ -5,7 +5,7 @@ data "archive_file" "zip" {
   output_path = "${path.root}/deployment_artifacts/${var.manager_name}.zip"
 }
 
-resource "aws_s3_bucket_object" "object" {
+resource "aws_s3_object" "object" {
   bucket = var.lambda_bucket.id
   key    = "originalCode/${var.manager_name}.zip"
   source = data.archive_file.zip.output_path
@@ -16,7 +16,7 @@ resource "aws_lambda_function" "manager_function" {
   function_name = var.manager_name
 
   s3_bucket = var.lambda_bucket.id
-  s3_key    = aws_s3_bucket_object.object.key
+  s3_key    = aws_s3_object.object.key
 
   runtime = "nodejs14.x"
   handler = "handler.handler"

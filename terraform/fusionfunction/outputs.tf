@@ -9,8 +9,17 @@ output "function" {
     ]
 }
 
-output "default_fusion_setups" {
-    value = local.default_fusion_setups
+output "configuration_metadata" {
+    value = aws_s3_object.configuration_metadata
+}
+
+output "lambda_fusion_manager" {
+    description = "Bucket Object that has been deployed as function code"
+    value = aws_s3_object.lambda_fusion_manager
+}
+
+output "default_fusion_setup" {
+    value = local.default_fusion_setup
 }
 
 output "sync_paths" {
