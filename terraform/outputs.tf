@@ -4,6 +4,11 @@ output "lambda_bucket_name" {
   value = aws_s3_bucket.lambda_bucket.id
 }
 
+output "function_log_group_names" {
+  description = "CSV of all log goup names that the extractor needs to run on"
+  value = join(",",[for function_name in module.fusionfunction.function_names : "/aws/lambda/${function_name}"])
+}
+
 output "function_name" {
   // for_each = fileset("${path.module}/../fusionables", "**/handler.json")
   description = "Lambda functions"

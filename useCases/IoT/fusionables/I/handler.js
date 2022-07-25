@@ -115,7 +115,6 @@ exports.handler = async function(event, callFunction) {
     console.log("AnalyzeSensor: All Promises are done, results are", results)
 
     return {
-        fusionSetup: process.env["FUSION_GROUPS"],
         results: results
     }
 }

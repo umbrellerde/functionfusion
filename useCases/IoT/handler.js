@@ -1,19 +1,14 @@
-const handlers = {}
-
 const https = require("https")
 const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
+const otherFunctions = require("setup.json")
+
 let basePath = ""
 let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
-let fusionGroups = getFusionGroupsFromEnv()
+//let fusionGroups = getFusionGroupsFromEnv()
 let currentTraceId = null
-const functionSizeMap = {}
-process.env["FUSION_GROUPS_SIZES"].split(",").forEach(e => {
-    let s = e.split(":")
-    functionSizeMap[s[0]] = s[1]
-})
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -27,20 +22,21 @@ exports.handler = async function (event) {
     if (!input.hasOwnProperty('traceId')) {
         let traceId = generateTraceId()
         input['traceId'] = traceId
-        currentTraceId = traceId
         firstStepInChain = true
-    } else {
-        // Necessary if this (non-root) Function calls another function
-        currentTraceId = input['traceId']
     }
-    console.log("TraceId", input['traceId'])
+
+    // Global variable used when calling another function
+    currentTraceId = input['traceId']
+
+    // Read by the extractor
+    console.log("TraceId", currentTraceId)
     console.log("FirstStep", firstStepInChain)
 
     // Invoke the function with await be cause execution stops when this function returns
     let timeBase = Date.now()
     let result = await invokeLocal(functionToHandle, input, true)
     console.log("time-base", Date.now() - timeBase)
-    console.log("function map", functionSizeMap)
+
     console.log("Result", result)
 
     return {
@@ -50,8 +46,8 @@ exports.handler = async function (event) {
         },
         body: JSON.stringify({
             result: result,
-            hello: "World",
-            map: functionSizeMap
+            from: functionToHandle,
+            root: firstStepInChain
         }),
     }
 }
@@ -64,16 +60,15 @@ exports.handler = async function (event) {
  */
 async function invokeRemote(step, data, sync = false) {
     let timeRemote = Date.now()
-    const [baseUrl, basePath] = await getUrlsFromEnv()
+    const [baseUrl, basePath] = await getUrlsForRemoteCall(step, sync)
     return new Promise((resolve, reject) => {
 
-        let invocationType = sync ? "SYNC-" : ""
-        let memory = getMemoryForFunction(step)
+        let pathPart = otherFunctions["rules"][functionToHandle][step][sync ? "sync" : "async"]["url"]
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
             // onlyStage/A to call A async
-            path: `/${basePath}/${invocationType}${step}-${memory}`,
+            path: `/${basePath}/${pathPart}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -88,7 +83,10 @@ async function invokeRemote(step, data, sync = false) {
             })
             res.on('end', () => {
                 if (sync) {
-                    let json = JSON.parse(resultData)
+                    if (resultData == '') {
+                        throw new Error("The response to a supposedly sync request was empty, which means that is was sent to an async endpoint. Please fix the optimizer. options=" + options)
+                    }
+                    let json = JSON.parse(resultData) // If the response was empty the request was sent to an async endpoint, which means there is an error in the optimizer
                     console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
                     resolve(json)
                 } else {
@@ -130,10 +128,10 @@ function getInputFromEvent(event) {
     }
 }
 
-async function getUrlsFromEnv() {
+async function getUrlsForRemoteCall(step, sync) {
+    // TODO get the url that should be used from somewhere else, maybe the optimizer/coldstarts could get them and put them into an env var whenever they run? This means that the fusion handler only needs to get the url from APIGw during the first run. On the other hand this greatly reduces experiment validity so let's not do it maybe.
     if (basePath === "") {
-        // TODO we should get this from somewhere else
-        baseUrl = "onlyStage" //process.env["stage_name"]
+        baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancy, but we don't want to
 
         let apigw = new AWS.APIGateway();
         let promise = new Promise((resolve, reject) => {
@@ -153,16 +151,11 @@ async function getUrlsFromEnv() {
 }
 
 function getHandler(resource) {
-    if (handlers[resource]) {
-        return handlers[resource]
-    }
-    // TODO the reqiore os is cached by node - should not be necessary to cache it?
-    handlers[resource] = require(`./fusionables/${resource}/handler`)
-    return handlers[resource]
+    return require(`./fusionables/${resource}/handler`)
 }
 
-function isInSameFusionGroup(thisName, otherName) {
-    return fusionGroups.filter((e) => e.includes(thisName))[0].includes(otherName)
+function shouldCallTaskLocally(otherName, sync) {
+    return otherFunctions["rules"][functionToHandle][otherName][sync ? "sync" : "async"]["strategy"] === "local"
 }
 
 
@@ -176,7 +169,7 @@ function isInSameFusionGroup(thisName, otherName) {
  */
 function callFunction(name, input, sync) {
     input['traceId'] = currentTraceId
-    if (isInSameFusionGroup(functionToHandle, name)) {
+    if (shouldCallTaskLocally(name, sync)) {
         console.log("I should call function", name, "with input", input, "and sync", sync, "locally")
         return invokeLocal(name, input, sync)
     } else {
@@ -189,22 +182,9 @@ function callFunction(name, input, sync) {
  * generates a trace id that encodes the current setup as well as a random part identifying a single execution flow
  */
 function generateTraceId() {
-    // Elements within a group are joined by ".", between fusion groups there is a ","
-    let fusionSetupPart = fusionGroups.map(e => e.join(".")).join(",")
-    let randomTracePart = crypto.randomBytes(32).toString("hex")
+    let fusionSetupPart = otherFunctions["traceName"]
+    let memory = process.env["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"]
+    let randomTracePart = crypto.randomBytes(16).toString("hex")
 
-    return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
-}
-
-function getFusionGroupsFromEnv() {
-    // result should be[["A", "B"], ["C"], ["D"]]
-    // from A.B,C,D
-    let str = process.env["FUSION_GROUPS"]
-    let groups = str.split(",")
-    let groupsSplitted = groups.map((e) => e.split("."))
-    return groupsSplitted
-}
-
-function getMemoryForFunction(step) {
-    return functionSizeMap[step]
+    return `${fusionSetupPart}-${functionToHandle}-${memory}-${randomTracePart}`
 }

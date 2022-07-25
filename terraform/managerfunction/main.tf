@@ -36,6 +36,12 @@ resource "aws_lambda_function" "manager_function" {
   }
 }
 
+// Don't retry calling this function! I want to know about timeouts
+resource "aws_lambda_function_event_invoke_config" "example" {
+  function_name                = aws_lambda_function.manager_function.function_name
+  maximum_retry_attempts       = 0
+}
+
 resource "aws_cloudwatch_log_group" "log_group" {
   name = "/aws/lambda/${var.manager_name}"
 

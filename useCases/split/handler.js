@@ -37,6 +37,7 @@ let baseUrl = ""
 const functionToHandle = process.env["FUNCTION_TO_HANDLE"]
 //let fusionGroups = getFusionGroupsFromEnv()
 let currentTraceId = null
+let isColdStart = true
 
 exports.handler = async function (event) {
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
@@ -59,6 +60,8 @@ exports.handler = async function (event) {
     // Read by the extractor
     console.log("TraceId", currentTraceId)
     console.log("FirstStep", firstStepInChain)
+    console.log("ColdStart", isColdStart)
+    isColdStart = false
 
     // Invoke the function with await be cause execution stops when this function returns
     let timeBase = Date.now()
@@ -111,7 +114,10 @@ async function invokeRemote(step, data, sync = false) {
             })
             res.on('end', () => {
                 if (sync) {
-                    let json = JSON.parse(resultData)
+                    if (resultData == '') {
+                        throw new Error("The response to a supposedly sync request was empty, which means that is was sent to an async endpoint. Please fix the optimizer. options=" + options)
+                    }
+                    let json = JSON.parse(resultData) // If the response was empty the request was sent to an async endpoint, which means there is an error in the optimizer
                     console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
                     resolve(json)
                 } else {
@@ -207,18 +213,9 @@ function callFunction(name, input, sync) {
  * generates a trace id that encodes the current setup as well as a random part identifying a single execution flow
  */
 function generateTraceId() {
-    // Elements within a group are joined by ".", between fusion groups there is a ","
     let fusionSetupPart = otherFunctions["traceName"]
-    let randomTracePart = crypto.randomBytes(32).toString("hex")
+    let memory = process.env["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"]
+    let randomTracePart = crypto.randomBytes(16).toString("hex")
 
-    return `${fusionSetupPart}-${functionToHandle}-${randomTracePart}`
+    return `${fusionSetupPart}-${functionToHandle}-${memory}-${randomTracePart}`
 }
-
-// function getFusionGroupsFromEnv() {
-//     // result should be[["A", "B"], ["C"], ["D"]]
-//     // from A.B,C,D
-//     let str = process.env["FUSION_GROUPS"]
-//     let groups = str.split(",")
-//     let groupsSplitted = groups.map((e) => e.split("."))
-//     return groupsSplitted
-// }

@@ -16,10 +16,10 @@ locals {
 
   // Memory Sizes Function Names is a map that has numbers as keys and the object with function_name and memory_size as value
   // We need the indices of the initial default functions...
-  // Solution: Get the list of keys in memory_sizes_function_names that have the minimum (== first specified...) memory size. Iterate over it and call memory_sizes_function_names[key]
-  default_function_keys = toset(compact([for i, v in local.__memory_sizes_function_names : local.memory_sizes_function_names[i].memory_size == max(var.memory_sizes...) ? "${i}" : ""]))
+  // Solution: Get the list of keys in memory_sizes_function_names that have the first specified (==default?!) memory size. Iterate over it and call memory_sizes_function_names[key]
+  default_function_keys = toset(compact([for i, v in local.__memory_sizes_function_names : local.memory_sizes_function_names[i].memory_size == var.memory_sizes[0] ? "${i}" : ""]))
   default_fusion_setup = {
-    "traceName" = "default",
+    "traceName" = time_static.create_time.unix,
     "rules" = {
       // Create entry from all keys to all keys.
       for i, v in local.function_names : v => { for i, v in local.function_names : v => {
@@ -35,12 +35,19 @@ locals {
   }
 }
 
+resource "time_static" "create_time" {}
+
 // Default Configuration Metadata already
 resource "aws_s3_object" "configuration_metadata" {
+
+  depends_on = [
+    local_file.lambda_default_fusion_setup_json,
+    data.archive_file.source_code_archive
+  ]
+
   bucket = var.lambda_bucket.id
   key = "metadata/configurationMetadata.json"
-  // TODO is default really a good name for the initial setup? Maybe encode as date or whatever?
-  content = jsonencode({default = local.default_fusion_setup})
+  content = jsonencode({(time_static.create_time.unix) = local.default_fusion_setup})
 }
 
 // Archive File in S3 with a twist - it contains the configuration json as file
@@ -61,6 +68,12 @@ data "archive_file" "source_code_archive" {
 }
 
 resource "aws_s3_object" "lambda_fusion_manager" {
+  depends_on = [
+    data.archive_file.source_code_archive,
+    local_file.lambda_default_fusion_setup_json,
+    aws_s3_object.configuration_metadata,
+    time_static.create_time
+  ]
   bucket = var.lambda_bucket.id
   key    = "originalCode/function.zip"
   source = data.archive_file.source_code_archive.output_path
@@ -114,6 +127,7 @@ resource "aws_lambda_permission" "lambda_permission" {
 }
 
 // Only API Gateway v1 for sync and async invocations below this line... Async is (mostly) realized via a module.
+// TODO in 04.2022 AWS Introduced Lambda Function URLs, which automatically create a free https URL for Lambda Functions. Problem is: This only works synchronously, but maybe this will change in the future?
 resource "aws_api_gateway_request_validator" "validator" {
   name        = "function-validator"
   rest_api_id = var.api.id

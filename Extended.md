@@ -20,7 +20,7 @@
 - ✔ Generalize: Handler looks at env variable json to determine where to call next
 
 - Extractor
-    - Add new Parameter Function Size
+    - ✔ Add new Parameter Function Size
     - Make Go Brrrrrm
 - Optimizer
     - Algo: Try all memory sizes before switching to new fusion setup?
@@ -34,3 +34,5 @@
 - Evaluation
     - How to set Memory for first called function? Read Deployment from Optimizer to find out how first function should be called.... Or setup APIGW Forwards
 - Statistics
+- Configuration Metadata
+    - ✔ {timestamp : { rules=likeHandler}} (Object with key=Timestamp, value=Object that is read by Handler etc.)

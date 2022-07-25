@@ -6,15 +6,16 @@ AWS.config.update({ region: "eu-central-1" })
 const cw = new AWS.CloudWatchLogs();
 const s3 = new AWS.S3()
 
-const bucketName = "fusion-code-centrally-seemingly-healthy-oarfish" //TODO
+const bucketName = process.argv[2]
 
-//const logGroupNames = ["/aws/lambda/fusion-function-A","/aws/lambda/fusion-function-B","/aws/lambda/fusion-function-C","/aws/lambda/fusion-function-D","/aws/lambda/fusion-function-E","/aws/lambda/fusion-function-F","/aws/lambda/fusion-function-G"] //TODO
-const logGroupNames = ["/aws/lambda/fusion-function-AS","/aws/lambda/fusion-function-CA","/aws/lambda/fusion-function-CS","/aws/lambda/fusion-function-CSA","/aws/lambda/fusion-function-CSL","/aws/lambda/fusion-function-CT","/aws/lambda/fusion-function-CW","/aws/lambda/fusion-function-DJ","/aws/lambda/fusion-function-I","/aws/lambda/fusion-function-SE"] //TODO
-
+const logGroupNames = process.argv[3].split(",")
 let fusionSet = new Set();
+let timeoutMs = 86400000
 
 async function extract() {
-    console.log("Starting Extractor")
+
+    console.log("TimeoutMs is:", timeoutMs)
+
     let allInvocations = []
 
     for (let i = 0; i < logGroupNames.length; i++) {
@@ -29,12 +30,14 @@ async function extract() {
 
     fusionSet = new Set();
 
+    console.log("Returning...")
+
     return {
         statusCode: 200,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { invocations: allInvocations },
+        body: { invocations: allInvocations.length },
     }
 }
 
@@ -51,6 +54,7 @@ async function saveInvocationsToS3(invocations) {
 
     console.log("Fusion Setups are: ", fusionSetups)
     console.log("Fusion Set is: ", fusionSet)
+    console.log("Number of invocations", invocations.length)
 
     let promises = []
     // Get the old data for these fusion groups and merge it with the new data.
@@ -59,7 +63,7 @@ async function saveInvocationsToS3(invocations) {
         console.log("...Currently merging Traces for fusiongroup", key)
         let newTraces = invocations.filter(inv => inv["fusionGroup"] == key)
         // Get existing Traces
-        let existingTraces = await getFromBucket(bucketName, `${key}.json`)
+        let existingTraces = await getFromBucket(bucketName, `traces/${key}.json`)
         //console.log("Got existing traces", existingTraces)
 
         // Check if the object is not empty
@@ -74,9 +78,6 @@ async function saveInvocationsToS3(invocations) {
         }
 
         //console.log("Merging newTraces and ExistingTraces: ", newTraces, existingTraces)
-        // Merge together
-        // TODO Make it a Set and then export the set to a list
-        // TODO Better Merge the Old and New Traces
         // --- for every new Trace: Find all Invocations with same Trace Id. Find all Invocations with same currentFunction.
         // ------ For every call of newTraces: filter existingTraces for call with same properties. If it does not exist, add it here.
         // {
@@ -98,8 +99,6 @@ async function saveInvocationsToS3(invocations) {
         //         "sync": false,
         //         "time": 212
         //     }
-        // Old:
-        //let mergedTraces = [...new Set([...existingTraces, ...newTraces])] //Object.assign(existingTraces, newTraces)
 
         for (let i = 0; i < newTraces.length; i++) {
             let currNew = newTraces[i]
@@ -142,7 +141,7 @@ async function saveInvocationsToS3(invocations) {
 
         //console.log("Type of Merged Traces is", typeof mergedTraces)
         // Save to S3
-        let promise = uploadToBucket(bucketName, `${key}.json`, mergedTraces)
+        let promise = uploadToBucket(bucketName, `traces/${key}.json`, mergedTraces)
         promises.push(promise)
     }
 
@@ -154,25 +153,37 @@ async function saveInvocationsToS3(invocations) {
  * @param {string} logGroupName 
  */
 async function getInvocationsFromLogGroup(logGroupName) {
-    //let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
-    //let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
-    //let startTime = Date.now() - 300_000 // 5min for the IoT full test
-    //let startTime = Date.now() - 3_600_000 // 30 Minutes for 300 invocations test
-    //let startTime = Date.now() - 15_840_000 // 4.5h
-    let startTime = Date.now() - process.argv[2]// 86_400_000 // 48h
+
+    let startTime = Date.now() - timeoutMs
     let endTime = Date.now()
 
     const allLogStreamsInput = {
         logGroupName: logGroupName,
         limit: 50,
+        orderBy: "LastEventTime"
     }
 
     let allLogStreams = null
     try {
         allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
+        // If the last event was before start time delete the logs because they aren't interesting to us
+        if (allLogStreams["lastEventTimestamp"] < startTime) {
+            console.log("Ignoring the whole log group since it is too old")
+            // The last update happened before our start time, so this log group is not important anymore
+            // Since they are ordered by LastEventTime, we have found everything we need
+            allLogStreams["logStreams"] = []
+            allLogStreams["nextToken"] = null
+            // nextToken will also be null so there is no need to null that
+        }
+
         while (allLogStreams["nextToken"]) {
-            console.log("Found a next Token:", allLogStreams["nextToken"])
+            //console.log("Found a next Token:", allLogStreams["nextToken"])
             allLogStreamsInput["nextToken"] = allLogStreams["nextToken"]
+            if (allLogStreams["lastEventTimestamp"] < startTime) {
+                // The last update happened before our start time, so this log group is not important anymore
+                // Since they are ordered by LastEventTime, we have found everything we need
+                break
+            }
             let newLogStream = await cw.describeLogStreams(allLogStreamsInput).promise()
             allLogStreams["logStreams"] = allLogStreams["logStreams"].concat(newLogStream["logStreams"])
             allLogStreams["nextToken"] = newLogStream["nextToken"]
@@ -182,15 +193,13 @@ async function getInvocationsFromLogGroup(logGroupName) {
         throw error
     }
 
-    console.log("AllLogStreams has found LogStreams:", allLogStreams["logStreams"].length)
-    console.log("Next Token is", allLogStreams["nextToken"])
-
+    console.log("AllLogStreams has found LogStreams:", allLogStreams["logStreams"].length, "for log group", logGroupName)
 
     let invocations = []
 
     for (let i = 0; i < allLogStreams["logStreams"].length; i++) {
         if (i % 100 == 0) {
-            console.log("Reading Stream", i)
+            console.log("Reading Stream", i, "started", allLogStreams["logStreams"][i]["lastEventTimestamp"])
         }
         let stream = allLogStreams["logStreams"][i]
 
@@ -217,34 +226,37 @@ async function getInvocationsFromLogGroup(logGroupName) {
                 tries++
                 continue
             }
-            while(logEvents && logEvents.hasOwnProperty("nextForwardToken")) {
-                //console.log("LogEvents has nextToken", logEvents["nextForwardToken"])
-                params["nextToken"] = logEvents["nextForwardToken"]
-                let newEvents = null
-                while (newEvents == null) {
-                    try {
-                        newEvents = await cw.getLogEvents(params).promise()
-                    } catch (error) {
-                        console.error("getLogEvents failed with ", error, "on try", tries)
-                        if (tries > 10) {
-                            throw error
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 5000 * tries))
-                        tries++
-                        continue
+        }
+        //console.log("Finished reading first events, trying nextForwardToken")
+        while(logEvents.hasOwnProperty("nextForwardToken")) {
+            //console.log("LogEvents has nextToken", logEvents["nextForwardToken"])
+            params["nextToken"] = logEvents["nextForwardToken"]
+            let newEvents = null
+            while (newEvents == null) {
+                try {
+                    newEvents = await cw.getLogEvents(params).promise()
+                } catch (error) {
+                    console.error("getLogEvents with next tokens failed with ", error, "on try", tries)
+                    if (tries > 10) {
+                        throw error
                     }
+                    await new Promise(resolve => setTimeout(resolve, 5000 * tries))
+                    tries++
+                    continue
                 }
-                logEvents["events"] = logEvents["events"].concat(newEvents["events"])
-                //console.log("Log Events is now length:", logEvents["events"].length)
-                if (newEvents["nextForwardToken"] === logEvents["nextForwardToken"]) {
-                    // Same response twice ==> Break
-                    //console.log("Got same FW Token twice, breaking")
-                    break;
-                } else {
-                    logEvents["nextForwardToken"] = newEvents["nextForwardToken"]
-                }
-                
             }
+            //console.log("New Events Forward Token")
+            //console.log(newEvents["nextForwardToken"])
+            logEvents["events"] = logEvents["events"].concat(newEvents["events"])
+            //console.log("Log Events is now length:", logEvents["events"].length)
+            if (newEvents["nextForwardToken"] === logEvents["nextForwardToken"]) {
+                // Same response twice ==> Break
+                //console.log("Got same FW Token twice, breaking")
+                break
+            } else {
+                logEvents["nextForwardToken"] = newEvents["nextForwardToken"]
+            }
+            
         }
 
         if (i % 100 == 0) {
@@ -261,6 +273,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
             } else if ((!searchingForStart) && currentEvent["message"].includes("REPORT RequestId: ")) {
                 //console.log("----- Found Report Message!", currentEvent)
                 searchingForStart = true
+                // TODO Remote
                 let newInvocation = extractInvocation(logEvents["events"].slice(startI, i + 1))
                 if (newInvocation != null) {
                     invocations.push(newInvocation)
@@ -271,6 +284,7 @@ async function getInvocationsFromLogGroup(logGroupName) {
             }
         }
     }
+    console.log("Number of invocations in log stream:", invocations.length)
     return invocations
 }
 
@@ -294,12 +308,12 @@ function extractInvocation(invocationEvents) {
         //console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
         //console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
         //console.log("All Log Messages Are", invocationEvents)
-        let [fusionGroup, source, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
+        let [fusionGroup, source, memoryMB, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
         let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
+        //let coldStart = (invocationEvents[3]["message"].split("ColdStart ")[1].replace(/[\n\r]/g, '') === 'true')
         let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
         let maxMemoryUsed = parseInt(report.split("Max Memory Used: ")[1].split(" ")[0])
 
-        //console.log("Fusion Group is", fusionGroup)
         fusionSet.add(fusionGroup)
 
         let startTimestamp = parseInt(invocationEvents[1]["timestamp"])
@@ -309,11 +323,15 @@ function extractInvocation(invocationEvents) {
         let calls = []
         let totalDuration = -1
 
+        //console.log("Fusion Group is", fusionGroup)
+        //console.log("From the first message", invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-"))
+
         // Ignore the START and END Messages => Start at 1 and finish at len-1
         for (let i = 1; i < invocationEvents.length - 1; i++) {
             let logLine = invocationEvents[i]["message"].split("INFO")[1]
             if (logLine && logLine.includes("time-")) {
                 logLine = logLine.trim()
+                //console.log("Found a time- log message", logLine)
 
                 if (logLine.startsWith("time-base")) {
                     totalDuration = parseInt(logLine.split(" ")[1])
@@ -323,11 +341,13 @@ function extractInvocation(invocationEvents) {
                 // Its relevant for timing stuff
                 // And looks like this:
                 // time-local-true-A-A 481.638
-                //   |    |     |  | | Called Function      
-                //   |    |     |  | Calling Function
-                //   |    |     | Is this a sync call? (Set by invocating function)  
-                //   |    | Local call or remote call?
-                //   | This is the marker that the logged string is relevant
+                //   |    |     |  | |  |
+                //   |    |     |  | |  |>Duration of call in ms
+                //   |    |     |  | |>Called Function      
+                //   |    |     |  |>Calling Function
+                //   |    |     |>Is this a sync call? (Set by invocating function)  
+                //   |    |>Local call or remote call?
+                //   |>This is the marker that the logged string is relevant
                 let [infoStr, time] = logLine.split(" ")
                 time = parseInt(time)
                 let info = infoStr.split("-")
@@ -335,6 +355,7 @@ function extractInvocation(invocationEvents) {
                 let sync = info[2] === "true"
                 let caller = info[3]
                 let called = info[4]
+                //console.log("...lead to Call:", {called: called, caller: caller, local: local, sync: sync, time: time})
                 calls.push({
                     called: called,
                     caller: caller,
@@ -345,6 +366,8 @@ function extractInvocation(invocationEvents) {
             }
         }
 
+        //console.log("Calls are", calls)
+
         let newInvocation = {
             traceId: traceId,
             fusionGroup: fusionGroup,
@@ -353,6 +376,8 @@ function extractInvocation(invocationEvents) {
             billedDuration: billedDuration,
             maxMemoryUsed: maxMemoryUsed,
             isRootInvocation: isRootInvocation,
+            //isColdStart: coldStart,
+            memory: memoryMB,
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp,
             internalDuration: totalDuration,
@@ -360,6 +385,7 @@ function extractInvocation(invocationEvents) {
         }
         return newInvocation
     } catch (err) {
+        // The invocation could not be extracted - we don't really care since this almost never happens...
         console.error(err)
         return null
     }
@@ -372,7 +398,7 @@ function extractInvocation(invocationEvents) {
  * @param {Object|Array} body The body that will be JSON.stringify-ed to save to s3 
  */
 async function uploadToBucket(bucket, key, body) {
-    return await s3.upload({
+    return s3.upload({
         Bucket: bucket,
         Key: key,
         Body: JSON.stringify(body),
@@ -407,7 +433,9 @@ async function getFromBucket(bucket, key) {
     let json = JSON.parse(resp.Body.toString('utf-8'))
     return json
 }
+
 (async function() {
-    console.log("Param is", parseInt(process.argv[2]))
+    let startTime = new Date();
     await extract()
+    console.log("Duration milliseconds: ", new Date() - startTime)
 })();

@@ -5,6 +5,8 @@ AWS.config.update({ region: process.env["AWS_REGION"] })
 const s3 = new AWS.S3()
 const lambda = new AWS.Lambda();
 
+
+// TODO read Configuration Metadata, Add a new Configuration, Call
 class Call {
     /**
      * @param {string} called Function name that was called
@@ -23,34 +25,58 @@ class Call {
 }
 
 class Invocation {
-    /**
-     * @param {Object} invocationObject
-     * @typedef {string} traceId - The TraceId of an Invocation
-     * @typedef {string} fusionGroup
-     * @typedef {string} source
-     * @typedef {string} currentFunction
-     * @typedef {number} billedDuration
-     * @typedef {number} maxMemoryUsed
-     * @typedef {boolean} isRootInvocation
-     * @typedef {number} startTimestamp
-     * @typedef {number} endTimestamp
-     * @typedef {number} internalDuration
-     * @typedef {}
-     */
     constructor(invocationObject) {
+        /**
+         * @typedef {string}
+         */
         this.traceId = invocationObject["traceId"]
+        /**
+         * @typedef {string}
+         */
         this.fusionGroup = invocationObject["fusionGroup"]
+        /**
+         * @typedef {string}
+         */
         this.source = invocationObject["source"]
+        /**
+        * @typedef {string}
+        */
         this.currentFunction = invocationObject["currentFunction"]
+        /**
+        * @typedef {number}
+        */
         this.billedDuration = invocationObject["billedDuration"]
+        /**
+        * @typedef {number}
+        */
         this.maxMemoryUsed = invocationObject["maxMemoryUsed"]
+        /**
+        * @typedef {boolean}
+        */
         this.isRootInvocation = invocationObject["isRootInvocation"]
+        /**
+        * @typedef {number}
+        */
         this.startTimestamp = invocationObject["startTimestamp"]
+        /**
+        * @typedef {number}
+        */
         this.endTimestamp = invocationObject["endTimestamp"]
+        /**
+        * @typedef {number}
+        */
         this.internalDuration = invocationObject["internalDuration"]
+        /**
+        * @typedef {Call[]}
+        */
         this.calls = extractCalls(invocationObject["calls"])
     }
 
+    /**
+     * 
+     * @param {*} callsObject The JSON Containing all calls
+     * @returns {Call[]} list of extracted calls
+     */
     static extractCalls(callsObject) {
         let calls = []
         for (let call of Object.keys(callsObject)) {
@@ -107,18 +133,18 @@ class Configuration {
      */
     constructor(invocations, strategy, memorySizes) {
         // How the functions were supposed to communicate with each other
-        this.configurations = invocations
+        this.invocations = invocations
         this.fusionGroup = invocations[0].fusionGroup
         this.strategy = strategy
         this.memorySizes = memorySizes
     }
 
-    static fromJson(json) {
-        // TODO this is wrong.
-        // let invocations = Object.keys(json).map(key => new Invocation(json[key]))
-        // // get Metadata from S3
-        // let strategy = InvocationStrategy.fromJson(getFromBucket(process.env["S3_BUCKET_NAME"], process.env["CONFIGURATION_METADATA"]), invocations[0].fusionGroup)
-        // return new Configuration(invocations)
+    /**
+     * @returns {Configuration[]} a list of all tested configurations and their corresponding invocations
+     */
+    static async getAllConfigurationsAndInvocations() {
+        let configurationMetadata = await getFromBucket(process.env["S3_BUCKET_NAME"], process.env["CONFIGURATION_METADATA"])
+        
     }
 
     /**
@@ -128,7 +154,10 @@ class Configuration {
      * @param {InvocationStrategy} strategy the new strategy
      * @param {Map<string, number} memorySizes The memory size of every task.
      */
-    static async deploy_new_strategy(name, strategy, memorySizes) {
+    static async deploy_new_strategy(strategy, memorySizes, name = null) {
+        if (name = null) {
+            name = Math.floor(Date.now() / 1000)
+        }
         // Check if the metadata store already has a configuration with this name
         let existingMetadata = await getFromBucket(process.env["S3_BUCKET_NAME"], process.env["CONFIGURATION_METADATA"])
         if (existingMetadata.hasOwnProperty(name)) {
@@ -138,9 +167,9 @@ class Configuration {
         // Sore the new configuration in metadata store
         await uploadToBucket(process.env["S3_BUCKET_NAME"], process.env["CONFIGURATION_METADATA"], existingMetadata)
         // Save strategy to fusion functions.
-        await updateInvocationStrategies(strategy)
-        await updateDefaultMemorySizes(memorySizes)
-        // ?? Run Optideployer ??
+        // TODO save new default memory Sizes
+        // TODO deploy new default memory Sizes
+        // TODO call Optideployer
     }
 }
 
@@ -189,38 +218,4 @@ class Configuration {
         Key: key,
         Body: JSON.stringify(body),
     }).promise()
-}
-
-/**
- * 
- * @param {InvocationStrategy} newStrat 
- * @returns Promise that needs to be awaited, all new functions
- */
-async function updateInvocationStrategies(newStrat) {
-    let promises = []
-    for (let fname of process.env["FUNCTION_NAMES"].split(",")) {
-        let currentConfiguration = await lambda.getFunctionConfiguration({
-            FunctionName: fname
-        }).promise()
-        console.log("Old Function Configuration", currentConfiguration)
-        let newEnv = currentConfiguration["Environment"]["Variables"]
-        newEnv["FUSION_SETUPS"] = Buffer.from(JSON.stringify(newStrat)),toString("base64")
-        console.log("New Configuration to be pushed", newEnv)
-        let promise = lambda.updateFunctionConfiguration({
-            FunctionName: fname,
-            Environment: {
-                Variables: newEnv
-            }
-        }).promise()
-        promises.push(promise)
-    }
-    return Promise.all(promises)
-}
-
-/**
- * 
- * @param {Map<string, number>} memorySizes 
- */
-async function updateDefaultMemorySizes(memorySizes) {
-    // 
 }

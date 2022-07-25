@@ -3,12 +3,14 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/terraform"
 
 # Enter MFA Token
-read -p "Is awsume correctly set up?"
+read -p "Is awsume correctly set up? [Press any key to continue]"
 
 # Replace the S3 Bucket and all the Logs.
-terraform destroy -auto-approve --parallelism=8
+terraform destroy -auto-approve
 sleep 12
-terraform apply -auto-approve --parallelism=8
+terraform apply -auto-approve
+# Sometimes the s3 bucket is not correctly created on the first try....
+terraform apply -auto-approve
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 

@@ -108,7 +108,7 @@ resource "aws_cloudwatch_log_group" "apigw" {
 module "fusionfunction" {
   source = "./fusionfunction"
   use_case = var.use_case
-  memory_sizes = [128, 256]
+  memory_sizes = [128]
   lambda_bucket = aws_s3_bucket.lambda_bucket
   lambda_exec = aws_iam_role.lambda_exec
   api = aws_api_gateway_rest_api.api
