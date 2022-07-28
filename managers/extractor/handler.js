@@ -1,18 +1,32 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
 
-AWS.config.update({ region: "eu-central-1" })
+AWS.config.update({ region: process.env["AWS_REGION"] })
 
 const cw = new AWS.CloudWatchLogs();
 const s3 = new AWS.S3()
 
-const bucketName = process.argv[2]
+const bucketName = process.env["S3_BUCKET_NAME"]
 
-const logGroupNames = process.argv[3].split(",")
+const logGroupNames = process.env["LOG_GROUP_NAMES"].split(",")
 let fusionSet = new Set();
-let timeoutMs = 86400000
+let timeoutMs = null
 
-async function extract() {
+exports.handler = async function (event) {
+    console.log("Starting Extractor with event", event)
+
+    let alternativeTimeout = 180000
+    try {
+        timeoutMs = parseInt(event["timeout"]) || alternativeTimeout
+    } catch (error) {
+            //let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
+        //let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
+        //let startTime = Date.now() - 300_000 // 5min for the IoT full test
+        //let startTime = Date.now() - 3_600_000 // 30 Minutes for 300 invocations test
+        //let startTime = Date.now() - 15_840_000 // 4.5h
+        // 86_400_000 48hrs
+        timeoutMs = alternativeTimeout
+    }
 
     console.log("TimeoutMs is:", timeoutMs)
 
@@ -29,8 +43,6 @@ async function extract() {
     await saveInvocationsToS3(allInvocations)
 
     fusionSet = new Set();
-
-    console.log("Returning...")
 
     return {
         statusCode: 200,
@@ -54,7 +66,6 @@ async function saveInvocationsToS3(invocations) {
 
     console.log("Fusion Setups are: ", fusionSetups)
     console.log("Fusion Set is: ", fusionSet)
-    console.log("Number of invocations", invocations.length)
 
     let promises = []
     // Get the old data for these fusion groups and merge it with the new data.
@@ -172,12 +183,11 @@ async function getInvocationsFromLogGroup(logGroupName) {
             // The last update happened before our start time, so this log group is not important anymore
             // Since they are ordered by LastEventTime, we have found everything we need
             allLogStreams["logStreams"] = []
-            allLogStreams["nextToken"] = null
             // nextToken will also be null so there is no need to null that
         }
 
         while (allLogStreams["nextToken"]) {
-            //console.log("Found a next Token:", allLogStreams["nextToken"])
+            console.log("Found a next Token:", allLogStreams["nextToken"])
             allLogStreamsInput["nextToken"] = allLogStreams["nextToken"]
             if (allLogStreams["lastEventTimestamp"] < startTime) {
                 // The last update happened before our start time, so this log group is not important anymore
@@ -284,7 +294,6 @@ async function getInvocationsFromLogGroup(logGroupName) {
             }
         }
     }
-    console.log("Number of invocations in log stream:", invocations.length)
     return invocations
 }
 
@@ -308,12 +317,13 @@ function extractInvocation(invocationEvents) {
         //console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
         //console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
         //console.log("All Log Messages Are", invocationEvents)
-        let [fusionGroup, source, memoryMB, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
+        let [fusionGroup, source, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
         let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
         let coldStart = (invocationEvents[3]["message"].split("ColdStart ")[1].replace(/[\n\r]/g, '') === 'true')
         let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
         let maxMemoryUsed = parseInt(report.split("Max Memory Used: ")[1].split(" ")[0])
 
+        //console.log("Fusion Group is", fusionGroup)
         fusionSet.add(fusionGroup)
 
         let startTimestamp = parseInt(invocationEvents[1]["timestamp"])
@@ -323,15 +333,11 @@ function extractInvocation(invocationEvents) {
         let calls = []
         let totalDuration = -1
 
-        //console.log("Fusion Group is", fusionGroup)
-        //console.log("From the first message", invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-"))
-
         // Ignore the START and END Messages => Start at 1 and finish at len-1
         for (let i = 1; i < invocationEvents.length - 1; i++) {
             let logLine = invocationEvents[i]["message"].split("INFO")[1]
             if (logLine && logLine.includes("time-")) {
                 logLine = logLine.trim()
-                //console.log("Found a time- log message", logLine)
 
                 if (logLine.startsWith("time-base")) {
                     totalDuration = parseInt(logLine.split(" ")[1])
@@ -355,7 +361,6 @@ function extractInvocation(invocationEvents) {
                 let sync = info[2] === "true"
                 let caller = info[3]
                 let called = info[4]
-                //console.log("...lead to Call:", {called: called, caller: caller, local: local, sync: sync, time: time})
                 calls.push({
                     called: called,
                     caller: caller,
@@ -366,8 +371,6 @@ function extractInvocation(invocationEvents) {
             }
         }
 
-        //console.log("Calls are", calls)
-
         let newInvocation = {
             traceId: traceId,
             fusionGroup: fusionGroup,
@@ -377,7 +380,6 @@ function extractInvocation(invocationEvents) {
             maxMemoryUsed: maxMemoryUsed,
             isRootInvocation: isRootInvocation,
             isColdStart: coldStart,
-            memory: memoryMB,
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp,
             internalDuration: totalDuration,
@@ -433,9 +435,3 @@ async function getFromBucket(bucket, key) {
     let json = JSON.parse(resp.Body.toString('utf-8'))
     return json
 }
-
-(async function() {
-    let startTime = new Date();
-    await extract()
-    console.log("Duration milliseconds: ", new Date() - startTime)
-})();

@@ -37,9 +37,7 @@ echo "Base URL is $base_url"
 # done
 
 # echo "-------------- Done Warming up, now for the optimizations ------------------"
-
-# TODO Iteration=0
-for ((iteration=4; iteration<default_iterations; iteration++)) do
+for ((iteration=0; iteration<default_iterations; iteration++)) do
     printf "\nRun $iteration"
     printf "\nuploading the next configuration to s3: $iteration\n"
     # aws s3 cp "../statistics/results/extendedTests/split-configuration-metadata/split-$iteration.json" "s3://$s3_bucket/metadata/configurationMetadata.json"
