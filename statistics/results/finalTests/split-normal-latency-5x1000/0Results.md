@@ -13,3 +13,6 @@ Mean: 9291.96, Confidence Interval: (9236.67 / 9347.24), Median: 9383.0 for bill
 A.B.D.E/C/F/G
 Mean: 3008.86, Confidence Interval: (3007.26 / 3010.46), Median: 3006.0 for rootDuration
 Mean: 4172.31, Confidence Interval: (4147.51 / 4197.12), Median: 4232.0 for billedDuration
+
+Optimizer Times (old optimizer)
+1s for 1000 inv
