@@ -12,6 +12,8 @@ const logGroupNames = process.env["LOG_GROUP_NAMES"].split(",")
 let fusionSet = new Set();
 let timeoutMs = null
 
+// TODO https://registry.terraform.io/modules/gadgetry-io/cloudwatch-logs-exporter/aws/latest
+
 exports.handler = async function (event) {
     console.log("Starting Extractor with event", event)
 

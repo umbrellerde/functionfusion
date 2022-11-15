@@ -42,9 +42,6 @@ let isColdStart = true
 
 exports.handler = async function (event) {
     let eventStart = Date.now()
-    if(isColdStart) {
-        console.log("overhead-coldstartToEvent", eventStart - coldStartTime)
-    }
     // This root handler might be invoked sync or async - we don't really care. Maybe the response will fall into the void.
 
     // see ExampleLog.md for possible invocation types
@@ -66,6 +63,9 @@ exports.handler = async function (event) {
     console.log("TraceId", currentTraceId)
     console.log("FirstStep", firstStepInChain)
     console.log("ColdStart", isColdStart)
+    if(isColdStart) {
+        console.log("overhead-coldstartToEvent", eventStart - coldStartTime)
+    }
     isColdStart = false
 
     // Invoke the function with await be cause execution stops when this function returns

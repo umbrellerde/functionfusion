@@ -1,5 +1,6 @@
 const AWS = require("aws-sdk");
 const { assert } = require("console");
+const { config } = require("process");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -8,6 +9,7 @@ const lambda = new AWS.Lambda();
 
 const bucketName = process.env["S3_BUCKET_NAME"]
 const functionLogGroupNames = process.env["FUNCTION_NAMES"].split(",")
+const configurationMetadataFName = process.env["CONFIGURATION_METADATA"]
 
 const setupFromList = (list) => list.map(e => e.sort().join(".")).sort().join(",")
 const listFromSetup = (setup) => setup.split(",").map(g => g.split("."))
@@ -19,11 +21,13 @@ exports.handler = async function (event) {
     let deleteStartInvocations = event["deleteSeconds"]
 
     // Get all .json Files from S3 ==> All Existing Fusion Setups
-    let setupsTested = await getAllSetups()
+    let setupsTested = getAllSetups()
+    let configurationMetadata = getConfigurationMetadata()
 
     // TODO is this an OK thing to do?
     // Delete the first three minutes of invocations
 
+    setupsTested = await setupsTested
     if (deleteStartInvocations > 0) {
         let minTime = 2082668400000 // This is just here on purpose so that the code breaks in 2036
         for (let key of Object.keys(setupsTested)) {
@@ -50,6 +54,8 @@ exports.handler = async function (event) {
     }
 
     console.log("All Setups tested", setupsTested)
+    configurationMetadata = await configurationMetadata
+    console.log("Configuration Metadata is", configurationMetadata)
 
     let stillTryingNewConfigurations = true
 
@@ -66,7 +72,7 @@ exports.handler = async function (event) {
 
 
     // Strategy - Try to improve iteratively on median latency, try a new configuration otherwise
-    let newConfiguration = iterateOnLowestLatency(setupsTested, false, getConfigurationWithLowestLatency)
+    let newConfiguration = iterateOnLowestLatency(setupsTested, false, configurationMetadata, getConfigurationWithLowestLatency)
 
     if (newConfiguration == null) {
         console.log("********************************************************************")
@@ -98,37 +104,21 @@ exports.handler = async function (event) {
 
     console.log("Done Testing Setups. New Configuration is", newConfiguration)
 
-    // Update the Env Variables of all Functions
-    // TODO get default memory size and change the default route
-    let promises = []
-    // fname=fusion-function-A ==> Function to handle is part after last "-"
-    for (let fname of functionLogGroupNames) {
-        let currentConfiguration = await lambda.getFunctionConfiguration({
-            FunctionName: fname
-        }).promise()
-        console.log("Old Function Configuration", currentConfiguration)
-        let newEnv = currentConfiguration["Environment"]["Variables"]
-        newEnv["FUSION_SETUPS"] = JSON.stringify({TODO: true})
-        newEnv["FUSION_GROUPS"] = newConfiguration
-        console.log("New Configuration to be pushed", newEnv)
-        let promise = lambda.updateFunctionConfiguration({
-            FunctionName: fname,
-            Environment: {
-                Variables: newEnv
-            }
-        }).promise()
-        promises.push(promise)
-    }
-
-    let result = await Promise.all(promises)
-    console.log("AWS Answered", result)
+    await overwriteConfigurationMetadata(newConfiguration)
+    // Sleep for s3 consistency...
+    await new Promise(r => setTimeout(r, 2000));
+    let optideployer = await lambda.invoke({
+        FunctionName: "Optideployer"
+    }).promise()
+    
+    console.log("AWS Answered", optideployer)
 
     return {
         statusCode: 200,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { setupsTested: setupsTested, newConfiguration: listFromSetup(newConfiguration), optimumFound: !stillTryingNewConfigurations },
+        body: { setupsTested: setupsTested, newConfiguration: newConfiguration, optimumFound: !stillTryingNewConfigurations },
     }
 }
 
@@ -247,7 +237,7 @@ function getConfigurationWithLowestLatency(setupsTested, requestResponseLatency 
  * @returns {string} the new fusion setup that should be tested.
  */
 function generateNewConfiguration(setupsTested) {
-    // function-fusion-A ==> A
+    // function-fusion-A ==> A, or function-fusion-A-256
     let functionNames = functionLogGroupNames.map(fn => fn.split("-")[2])
 
     let resultConfiguration = getNextPossibleConfiguration(setupsTested, functionNames)
@@ -264,246 +254,102 @@ function generateNewConfiguration(setupsTested) {
  * @param {*} setupsTested 
  * @param {*} functionNames 
  * @returns The setup string if a new one was found, null otherwise
- */
+
 function getNextPossibleConfiguration(setupsTested, functionNames) {
-    let alreadyTested = (setup) => Object.keys(setupsTested).includes(setup)
 
-    // https://stackoverflow.com/questions/42773836
-    function* subsets(array, offset = 0) {
-        while (offset < array.length) {
-            let first = array[offset++];
-            for (let subset of subsets(array, offset)) {
-                subset.push(first);
-                yield subset;
-            }
-        }
-        yield [];
-    }
-
-    /**
-     * 
-     * @param {*} deiniteGroups a list of lists with the set groups
-     * @param {*} ungrouped a list of functions that still need to be grouped
-     */
-    function tryAllCombinations(definiteGroups, ungrouped) {
-        console.log("Trying definite, upgrouped: ", definiteGroups, ungrouped)
-        for (let subset of subsets(ungrouped)) {
-            console.log("...subset", subset)
-            if (subset.length == 0) {
-                console.log("Skipping since subset is empty")
-                continue
-            }
-
-            let restUngrouped = ungrouped.filter((name) => !subset.includes(name))
-            let newDefiniteGroups = definiteGroups.slice()
-            newDefiniteGroups.push(subset)
-
-            if (restUngrouped.length == 0) {
-                // All elements have been grouped
-                // console.log("Testing definite Group:", newDefiniteGroups)
-                // console.log("Setup is:", setupFromList(newDefiniteGroups))
-                // console.log("AlreadyTested", alreadyTested(setupFromList(newDefiniteGroups)))
-                // console.log("(Currently trying definite)", definiteGroups)
-                // console.log("(Current Subset)", subset)
-                if (!alreadyTested(setupFromList(newDefiniteGroups))) {
-                    return newDefiniteGroups
-                }
-            } else {
-                let subcombinations = tryAllCombinations(newDefiniteGroups, restUngrouped)
-                if (subcombinations != null) {
-                    return subcombinations
-                }
-                // There are no subcombinations
-                // Continue trying
-            }
-        }
-        console.log("I have found nothing an i am all out of ideas")
-        return null
-    }
-    return setupFromList(tryAllCombinations([], functionNames))
+    // TODO get the configuration file to see all the tested setups and their configuration
+    // change one little thing and then return this changed configuration
 }
+ */
 
 const pairs = (arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat();
-function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, functionToFindBase = getConfigurationWithLowestLatency) {
-    let currentMin = functionToFindBase(setupsTested)
-    let currentOptimalSetup = listFromSetup(currentMin)
-    console.log("Current Optimal Setup is:", currentOptimalSetup)
-    // change something about this configuration smartly:
-    // - Check if there are sync calls to functions that are not fused yet.
-    // - Change a SINGLE thing about the configuration and try it out.
-
-    // Get a Set of Sets where every inside set are all the functions that sync-call each other
-    let syncCalls = new Set()
-    // Initialize the Set so that initially every function is inside its own syncSet
+function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, configurationMetadata = {}, functionToFindBase = getConfigurationWithLowestLatency) {
+    let currentMin = functionToFindBase(setupsTested) // Key of the currently fastest setup.
+    let currentMinConfiguration = configurationMetadata[currentMin]
     let functionNames = functionLogGroupNames.map(fn => fn.split("-")[2])
-    functionNames.forEach(fname => syncCalls.add(new Set([fname])))
+    // change something about this configuration smartly:
+    // - Check if there are sync calls to functions that are currently remotely, or async calls that are local
+    // - Change a SINGLE thing about the configuration and try it out.
+    // ==> TODO build how the configuration should look like and check if it's different somewhere
 
-    // Go over all Invocations and merge the sets that call each other
+    // Step 1: find the "fusion setup" that should be used (later on we'll figure out the sizes)
+    let actualCallsConfiguration = {}
     for (let key of Object.keys(setupsTested)) {
         let invocationsList = setupsTested[key]
         for (let invocation of invocationsList) {
-            // This is a List of Functions that should be in the same fusion group
+            let caller = invocation["currentFunction"]
+            // This is a list of strings (==task name)
             let syncCallsList = invocation["calls"]
                 .filter((call) => call["sync"] == true)
                 .map((call) => call["called"])
-            // Go over every pair of sync calls and check if they are already in the same sync set
-            pairs(syncCallsList).forEach(pair => {
-                // pair[0] and pair[1] are the functions that should be together
-                let firstSet = [...syncCalls].find(set => set.has(pair[0]))
-                let alreadySync = firstSet.has(pair[1])
-                if (!alreadySync) {
-                    let secondSet = [...syncCalls].find(set => set.has(pair[1]))
-                    syncCalls.delete(secondSet);
-                    [...secondSet].forEach(item => firstSet.add(item))
+            let asyncCallsList = invocation["calls"]
+                .filter((call) => call["async"] == true)
+                .map((call) => call["called"])
+            // Init Object if it's null
+            if (actualCallsConfiguration[caller] == null) {
+                actualCallsConfiguration[caller] = {}
+            }
+            // For now, just count how often it's called sync/async
+            for(let e of syncCallsList) {
+                // Init Object if it's null
+                if (actualCallsConfiguration[caller][e] == null) {
+                    actualCallsConfiguration[caller][e] = {async: 0, sync: 1}
+                } else {
+                    actualCallsConfiguration[caller][e]["sync"] = actualCallsConfiguration[caller][e]["sync"] + 1
                 }
-            })
+            }         
+            for(let e of asyncCallsList) {
+                // Init Object if it's null
+                if (actualCallsConfiguration[caller][e] == null) {
+                    actualCallsConfiguration[caller][e] = {async: 1, sync: 0}
+                } else {
+                    actualCallsConfiguration[caller][e]["async"] = actualCallsConfiguration[caller][e]["async"] + 1
+                }
+            }       
         }
     }
 
     console.log("----- Done Setting up, now finding new optimums.")
-    console.log("syncCalls", syncCalls)
-    // Compare setup and syncCalls to find possible improvements
-    for (let i = 0; i < currentOptimalSetup.length; i++) {
-        let fusionGroup = currentOptimalSetup[i]
-        for (let fktn of fusionGroup) {
-
-            //----------------------------------------------
-            // Check if there are any functions that are in a sync set with a function that does not get called at all.
-            let fktnGroup = currentOptimalSetup.find(it => it.includes(fktn))
-            let fktnSyncSet = [...syncCalls].find(it => it.has(fktn))
-            for (let j = fktnGroup.length - 1; j >= 0; j--) {
-                let fktnInGroup = fktnGroup[j]
-                if (!fktnSyncSet.has(fktnInGroup)) {
-                    //console.log(fktnInGroup, "should not be in the same fusionGroup as", fktn)
-                    let i = currentOptimalSetup.findIndex(it => it.includes(fktn))
-                    let newSetup = [...currentOptimalSetup]
-                    newSetup[i] = fktnGroup.filter(item => item !== fktnInGroup)
-                    newSetup.push([fktnInGroup])
-                    //console.log("new Optimal Setup", setupFromList(newSetup))
-
-                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(newSetup))
-                    if (nullIfAlreadyTested && alreadyTested) {
-                        //console.log("Returning Null because it has already been tested")
-                        return null
-
+    console.log("Actual Calls", actualCallsConfiguration)
+    console.log("currentMin", currentMin)
+    console.log("configurationMetadata", configurationMetadata)
+    console.log("Current Min Configuration", currentMinConfiguration)
+    // Compare currentMinConfiguration and actualCallsConfiguration to find possible improvements
+    // Iterate over actualCalls and see whether the configuration is "optimal" (==local sync & remote async)
+    for (let caller of Object.keys(actualCallsConfiguration)) {
+        for (let called of Object.keys(actualCallsConfiguration[caller])) {
+            console.log(`getting caller=${caller} called=${called} from`, currentMinConfiguration["rules"])
+            let minConfig = currentMinConfiguration["rules"][caller][called]
+            let actualCalls = actualCallsConfiguration[caller][called]
+            // Are there async calls but the sync strategy is local?? Then move them!
+            if (actualCalls["async"] != null && actualCalls["async"] > 10) { //10 is arbitrary, should be a percentage of total calls to signify importance
+                if(minConfig["async"]["strategy"] === "local") {
+                    // Oh nose, we found something to change! There are async calls, but the strategy for async calls is to call locally!
+                    configurationMetadata[currentMin]["rules"][caller][called]["async"] = {
+                        "strategy": "remote",
+                        "url": called
                     }
-
-                    if (!alreadyTested) {
-                        return setupFromList(newSetup)
-                    } else {
-                        //console.log("...was already")
-                    }
-                } else {
-                    //console.log("Function Sync Set contains function", fktnInGroup)
+                    console.log(`changing ${caller} to ${called} to be remote instead of local`)
+                    return configurationMetadata
                 }
             }
-
-            // -------------------------------------
-            // Create a new Set from an Array that is filtered, the array consists of the old set. Not very fast, but ES6 has no Filter() on Sets.
-            // Get the Sync Set that has the function in it
-            let syncSet = [...syncCalls].find(s => s.has(fktn))
-            if (syncSet === undefined) {
-                // The function was not called, ignore it
-                //console.log("Skipping uncalled function", fktn)
-                continue
-            }
-            let syncSetAsArray = [...syncSet]
-            for (let j = 0; j < syncSetAsArray.length; j++) {
-                let shouldBeSync = syncSetAsArray[j]
-                //console.log("Trying whether", shouldBeSync, "is already in fusion group", fusionGroup)
-                //console.log("Shouldbesync type:", typeof shouldBeSync)
-                if (!fusionGroup.includes(shouldBeSync)) {
-                    //console.log("!!! Found one! FusionGroup", fusionGroup, "does not include", shouldBeSync, "!")
-                    //console.log("Old Optimal Setup: ", currentOptimalSetup)
-                    // Found one! shouldBeSync should be in Fusion group, but its not.
-                    // Remove shouldBeSync from other fusion group
-                    for (let k = 0; k < currentOptimalSetup.length; k++) {
-                        // Get the fusion group without the Item to be removed
-                        let newGroup = currentOptimalSetup[k].filter(item => item !== shouldBeSync)
-                        //console.log("Current Group", currentOptimalSetup[k], "filtered down to", newGroup)
-                        if (newGroup.length == 0) {
-                            //console.log("...Removing it")
-                            // The group without the item is empty==> Remote it fully
-                            // The Fusion Group is gone now, remove this element
-                            currentOptimalSetup.splice(k, 1)
-                        } else {
-                            currentOptimalSetup[k] = newGroup
-                        }
+            // Same as above, but the other way around. With the initial setup of everything local this should never happen
+            if (actualCalls["sync"] != null && actualCalls["sync"] > 10) {
+                if(minConfig["async"]["strategy"] === "remote") {
+                    // Oh nose, we found something to change! There are async calls, but the strategy for async calls is to call locally!
+                    configurationMetadata[currentMin][caller][called]["sync"] = {
+                        "strategy": "local"
                     }
-                    // Add to current fusion group
-                    currentOptimalSetup[i].push(shouldBeSync)
-                    //console.log("New Optimal Setup: ", currentOptimalSetup)
-
-                    // Was this setup already tested?
-                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
-
-                    if (alreadyTested) {
-                        // The iteration on the current lowest latency was already tested...
-                        //console.log("New Optimum has already been tested...")
-
-                        if (nullIfAlreadyTested) {
-                            return null
-                        }
-
-                        continue
-                    }
-
-                    return setupFromList(currentOptimalSetup)
-                } else {
-                    //console.log("...It is already...")
-                }
-            }
-            //----------------------------------------------
-            // Done merging stuff to make it faster
-            // Now: Try to move stuff that is async in different functions.
-            let notSyncSet = [...syncCalls].find(s => !s.has(fktn))
-            console.log("Not Sync Set is", notSyncSet)
-            let notSyncSetAsArray = [...notSyncSet]
-            for (let j = 0; j < notSyncSetAsArray.length; j++) {
-                let shouldNotBeSync = notSyncSetAsArray[j]
-                //console.log("Trying whether", shouldNotBeSync, "is wrongly in fusion group", fusionGroup)
-                if (fusionGroup.includes(shouldNotBeSync)) {
-                    //console.log("!!! Found one! FusionGroup", fusionGroup, "includes", shouldNotBeSync, ", but shouldn't!")
-                    //console.log("Old Optimal Setup: ", currentOptimalSetup)
-                    // Found one! shouldNotBeSync should NOT be in Fusion group, but it is.
-                    // Remote shouldNotBeSync from the fusion group
-                    for (let k = 0; k < currentOptimalSetup.length; k++) {
-                        let newGroup = currentOptimalSetup[k].filter(item => item !== shouldNotBeSync)
-                        if (newGroup.length == 0) {
-                            // The Fusion Group is gone now, remove this element
-                            currentOptimalSetup.splice(k, 1)
-                            k-- // Do the group with the new index k again. k++ of for loop will increase it, so subtract one here.
-                        } else {
-                            currentOptimalSetup[k] = newGroup
-                        }
-                    }
-                    // Add to a new fusion group with this member
-                    currentOptimalSetup.push([shouldNotBeSync])
-                    //console.log("New Optimal Setup: ", currentOptimalSetup)
-
-                    // Was this setup already tested?
-                    let alreadyTested = Object.keys(setupsTested).includes(setupFromList(currentOptimalSetup))
-
-                    if (alreadyTested) {
-                        // The iteration on the current lowest latency was already tested...
-                       // console.log("New Optimum has already been tested...")
-
-                        if (nullIfAlreadyTested) {
-                            //console.log("Returning Null because it has already been tested")
-                            return null
-                        }
-
-                        continue
-                    }
-
-                    return setupFromList(currentOptimalSetup)
-                } else {
-                    //console.log("...It is already...")
+                    console.log(`changing ${caller} to ${called} to be local instead of remote, which is really unlikely but still happened!`)
+                    return configurationMetadata
                 }
             }
         }
     }
-    console.log("Cannot find anything to improve")
+    
+    console.log("remote/async is already optimal - now on to memory sizes!")
+    // TODO do some power tuning here!
+
     // There is nothing that can be fused from the current function
     return null
 }
@@ -530,7 +376,7 @@ async function getAllSetups() {
     console.log("All files are", fileNames)
     for (let i = 0; i < fileNames.length; i++) {
         let fn = fileNames[i]
-        let groupName = fn.replace(".json", "")
+        let groupName = fn.replace(".json", "").replace("traces/", "")
         let content = await getFromBucket(bucketName, fn)
 
         // The content is a list of invocations - but in JSON its saved as an object with the key being the array index.
@@ -542,6 +388,25 @@ async function getAllSetups() {
     }
 
     return groupMap
+}
+
+/**
+ * @returns Parsed JSON from the configuration metadata file in s3
+ */
+async function getConfigurationMetadata() {
+    return getFromBucket(bucketName, configurationMetadataFName)
+}
+
+/**
+ * Will overwrite the configuration metadata
+ * @param {*} body will be turned into json
+ */
+async function overwriteConfigurationMetadata(body) {
+    return s3.upload({
+        Bucket: bucketName,
+        Key: configurationMetadataFName,
+        Body: JSON.stringify(body),
+    }).promise()
 }
 
 /**

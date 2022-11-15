@@ -21,6 +21,7 @@ default_iterations=6
 # How many invocations per fusion group?
 default_count=200 # 1000 in paper
 # Note: remember to change optimization function in optimizer
+# Note: remember to set the default useCase in terraform
 
 echo "Base URL is $base_url"
 
@@ -40,6 +41,7 @@ echo "Base URL is $base_url"
 for ((iteration=0; iteration<default_iterations; iteration++)) do
     printf "\nRun $iteration"
     printf "\nuploading the next configuration to s3: $iteration\n"
+    # TODO get current tests
     # aws s3 cp "../statistics/results/extendedTests/split-configuration-metadata/split-$iteration.json" "s3://$s3_bucket/metadata/configurationMetadata.json"
     aws s3 cp "../statistics/results/extendedTests/iot-configuration-metadata/iot-$iteration.json" "s3://$s3_bucket/metadata/configurationMetadata.json"
     sleep 10
@@ -48,7 +50,10 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     sleep 10
     for ((run=0; run<default_count; run++)) do
         printf "\n...$run "
+        # TODO is coldstarts?
         aws lambda invoke --function-name coldstarts /dev/null
+
+        # TODO sync? Memory-size? Use Case Intro Point?
         curl -X POST "$base_url/SYNC-I" -H 'Content-Type: application/json' -d '{"test": "event"}'
         # curl -X POST "$base_url/I" -H 'Content-Type: application/json' -d '{"test": "event"}' &
         # curl -X POST "$base_url/A" -H 'Content-Type: application/json' -d '{"test": "event"}' &
