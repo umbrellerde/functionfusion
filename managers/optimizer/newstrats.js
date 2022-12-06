@@ -1,3 +1,6 @@
+/**
+ * This file was an attempt to make the optimizer better. So far it's failed.
+ */
 const AWS = require("aws-sdk");
 
 AWS.config.update({ region: process.env["AWS_REGION"] })

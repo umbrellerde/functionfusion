@@ -18,7 +18,8 @@ locals {
   // We need the indices of the initial default functions...
   // Solution: Get the list of keys in memory_sizes_function_names that have the first specified (==default?!) memory size. Iterate over it and call memory_sizes_function_names[key]
   default_function_keys = toset(compact([for i, v in local.__memory_sizes_function_names : local.memory_sizes_function_names[i].memory_size == var.memory_sizes[0] ? "${i}" : ""]))
-  default_fusion_setup = {
+  # This is the default fusion setup that we currently think is best
+  fusion_setup_async_remote = {
     "traceName" = time_static.create_time.unix,
     "rules" = {
       // Create entry from all keys to all keys.
@@ -33,6 +34,21 @@ locals {
       } }
     }
   }
+  fusion_setup_all_local = {
+    "traceName" = time_static.create_time.unix,
+    "rules" = {
+      // Create entry from all keys to all keys.
+      for i, v in local.function_names : v => { for i, v in local.function_names : v => {
+        "sync" = {
+          "strategy" = "local"
+        }
+        "async" = {
+          "strategy" = "local"
+        }
+      } }
+    }
+  }
+  default_fusion_setup = local.fusion_setup_all_local
 }
 
 resource "time_static" "create_time" {}

@@ -13,6 +13,10 @@ output "configuration_metadata" {
     value = aws_s3_object.configuration_metadata
 }
 
+output "memory_sizes" {
+    value = var.memory_sizes
+}
+
 output "lambda_fusion_manager" {
     description = "Bucket Object that has been deployed as function code"
     value = aws_s3_object.lambda_fusion_manager

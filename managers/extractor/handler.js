@@ -319,7 +319,8 @@ function extractInvocation(invocationEvents) {
         //console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
         //console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
         //console.log("All Log Messages Are", invocationEvents)
-        let [fusionGroup, source, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
+        // {fusionSetupPart}-${functionToHandle}-${memory}-${randomTracePart}
+        let [fusionGroup, source, memoryAvail, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
         let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
         let coldStart = (invocationEvents[3]["message"].split("ColdStart ")[1].replace(/[\n\r]/g, '') === 'true')
         let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
@@ -379,6 +380,7 @@ function extractInvocation(invocationEvents) {
             source: source,
             currentFunction: calls[0]["caller"],
             billedDuration: billedDuration,
+            memoryAvail: memoryAvail,
             maxMemoryUsed: maxMemoryUsed,
             isRootInvocation: isRootInvocation,
             isColdStart: coldStart,

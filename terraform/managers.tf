@@ -7,6 +7,7 @@ module "optimizer" {
   function_names = module.fusionfunction.function_names
   env = {
     CONFIGURATION_METADATA = module.fusionfunction.configuration_metadata.key
+    FUNCTION_POSSIBLE_MEM_SIZES = join(",",[for memory_size in module.fusionfunction.memory_sizes : "${memory_size}"])
   }
 }
 

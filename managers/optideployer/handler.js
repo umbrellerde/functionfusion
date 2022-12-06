@@ -19,11 +19,13 @@ const s3Bucket = process.env["S3_BUCKET_NAME"]
 
 exports.handler = async function (event) {
     console.log("Event is:", event)
+    let urlPromise = getAPIGWBaseURL()
     let mainZipFile = await getS3Object(s3Bucket, process.env["FUNCTION_ZIP_OBJECT"])
     let setups = JSON.parse(await getS3Object(s3Bucket, process.env["CONFIGURATION_METADATA"]))
     let promises = []
+    let apigwUrls = await urlPromise
     for (let fname of deployedFunctionNames) {
-        promises.push(updateFunction(fname, mainZipFile, setups));
+        promises.push(updateFunction(fname, mainZipFile, setups, apigwUrls));
         //await updateFunction(fname, mainZipFile, setups)
     }
     let results = await Promise.all(promises);
@@ -36,7 +38,7 @@ exports.handler = async function (event) {
     }
 }
 
-async function updateFunction(fname, mainZipFile, setups) {
+async function updateFunction(fname, mainZipFile, setups, apigwUrls) {
     let mainZip = new JSZip();
     await mainZip.loadAsync(mainZipFile);
     let localTasks = await getLocalTasksOfFunction(fname, setups);
@@ -53,9 +55,10 @@ async function updateFunction(fname, mainZipFile, setups) {
     let setupToUse = setups[lastTimestamp]
     console.log("New Setup to Use: ", lastTimestamp)
     mainZip.file("setup.json", JSON.stringify(setupToUse))
+    mainZip.file("apigw.json", JSON.stringify(apigwUrls))
 
     // Upload the new function to S3
-    let newZip = await mainZip.generateAsync({type:"nodebuffer"});
+    let newZip = await mainZip.generateAsync({ type: "nodebuffer" });
     let newKey = `updatedCode/${fname}.zip`
     let uploaded = await S3.upload({
         Bucket: s3Bucket,
@@ -110,4 +113,35 @@ async function getLocalTasksOfFunction(fname, setups) {
     }
     console.log("Tasks that should be inside the function:", localTasks)
     return localTasks;
+}
+
+/**
+ * So this is a nice but also not very elegant hack: The fusion handler needs this Base Address to remotely call to other functions.
+ * We cannot directly write this address into an env variable via terraform since the APIGW can only be created after the functions are deployed, after which its not possible to alter the function env variables anymore
+ * It currently gets this after every cold start, which takes around 1s and makes cold starts very very slow if the send a remote request
+ * So the solution is: Before the first run of the optimizer, the fusion handler needs to take this slow approach. But after the first run, we will always write the base url into a well known file. So it might be a good idea to just run the optimizer empty after the `terraform apply`
+ */
+async function getAPIGWBaseURL() {
+    let startTime = Date.now()
+    baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancy, but we don't want to
+
+    let apigw = new AWS.APIGateway();
+    let promise = new Promise((resolve, reject) => {
+        let req = apigw.getRestApis({}, function (err, data) {
+            if (err) reject(err)
+            else resolve(data.items)
+        })
+        req.send()
+    })
+    let result = await promise
+
+    let apiId = result.filter((i) => i.name === "lambda-api")[0].id
+    // everything before the last slash , everything after the last slash
+    basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
+    console.log("overhead-ApiCallUrls", Date.now() - startTime)
+    return {
+        "path": basePath,
+        "url": baseUrl
+    }
+
 }

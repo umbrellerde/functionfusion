@@ -70,7 +70,7 @@ resource "aws_iam_role" "iam_role" {
       Version = "2012-10-17"
       Statement = [
         {
-          Action   = ["cloudwatch:*", "logs:*", "s3:*", "lambda:*", "kms:*"]
+          Action   = ["cloudwatch:*", "logs:*", "s3:*", "lambda:*", "kms:*", "apigateway:GET", "dynamodb:*"]
           Effect   = "Allow"
           Resource = "*"
         }

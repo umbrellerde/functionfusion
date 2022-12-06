@@ -171,21 +171,29 @@ async function getUrlsForRemoteCall(step, sync) {
     // TODO get the url that should be used from somewhere else, maybe the optimizer/coldstarts could get them and put them into an env var whenever they run? This means that the fusion handler only needs to get the url from APIGw during the first run. On the other hand this greatly reduces experiment validity so let's not do it maybe.
     if (basePath === "") {
         let startTime = Date.now()
-        baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancy, but we don't want to
+        try{
+            let apigwUrls = require("apigw.json")
+            baseUrl = apigwUrls["url"]
+            basePath = apigwUrls["path"]
+            console.log("Used optideployer-provided apigw urls")
+        }catch(e) {
+            baseUrl = "onlyStage" //process.env["stage_name"] if we want to be fancy, but we don't want to
 
-        let apigw = new AWS.APIGateway();
-        let promise = new Promise((resolve, reject) => {
-            let req = apigw.getRestApis({}, function (err, data) {
-                if (err) reject(err)
-                else resolve(data.items)
+            let apigw = new AWS.APIGateway();
+            let promise = new Promise((resolve, reject) => {
+                let req = apigw.getRestApis({}, function (err, data) {
+                    if (err) reject(err)
+                    else resolve(data.items)
+                })
+                req.send()
             })
-            req.send()
-        })
-        let result = await promise
-
-        let apiId = result.filter((i) => i.name === "lambda-api")[0].id
-        // everything before the last slash , everything after the last slash
-        basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
+            let result = await promise
+    
+            let apiId = result.filter((i) => i.name === "lambda-api")[0].id
+            // everything before the last slash , everything after the last slash
+            basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
+            console.log("Used self-gotten apigw urls")
+        }
         console.log("overhead-ApiCallUrls", Date.now() - startTime)
     }
     return [basePath, baseUrl]
