@@ -11,16 +11,18 @@ If you use this software in a publication, please cite it as:
 
 ### Text
 
-T. Schirmer, J. Scheuner, T. Pfandzelter, D. Bermbach, **Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion** arXiv:2204.11533 [cs.DC] 2022
+Trever Schirmer, Joel Scheuner, Tobias Pfandzelter, David Bermbach Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion 10th IEEE International Conference on Cloud Engineering (IC2E 2022) 2022
 
 ### BibTeX
 
 ```bibtex
-@article{schirmer_fusionize:2022,
+@inproceedings{schirmer_fusionize:_2022,
     title = "Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion",
+    booktitle = "10th IEEE International Conference on Cloud Engineering (IC2E 2022)",
     author = "Schirmer, Trever and Scheuner, Joel and Pfandzelter, Tobias and Bermbach, David",
-    journal = "arXiv:2204.11533 [cs.DC]",
     year = 2022,
+    month = sep,
+    publisher = "IEEE",
 }
 ```
 
