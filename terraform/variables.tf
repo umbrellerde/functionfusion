@@ -13,3 +13,8 @@ variable "use_case" {
   #default = "useCases/empty"
   default = "useCases/split"
 }
+
+variable "memory_sizes" {
+  description = "List of all memory sizes that should be deployed. The first element of the list is the default, the rest of the order is irrelevant"
+  default = [128, 256]
+}

@@ -29,6 +29,61 @@ resource "aws_s3_bucket" "lambda_bucket" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_policy" "lambda_bucket_policy" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  policy = data.aws_iam_policy_document.allow_access_from_cloudwatch.json
+  # policy = jsonencode({ 
+  #   "Version": "2012-10-17",
+  #   "Statement": [
+  #     {
+  #         "Action": "s3:GetBucketAcl",
+  #         "Effect": "Allow",
+  #         "Resource": "*"
+  #         "Principal": { "Service": "logs.${var.aws_region}.amazonaws.com" }
+  #     }
+  #     ,
+  #     {
+  #         "Action": "s3:PutObject" ,
+  #         "Effect": "Allow",
+  #         "Resource": "*",
+  #         "Principal": { "Service": "logs.${var.aws_region}.amazonaws.com" }
+  #     }
+  #   ]
+  # })
+}
+
+data "aws_iam_policy_document" "allow_access_from_cloudwatch" {
+  # Version = "2012-10-17"
+  # Statement = {
+  #   {
+  #     Action = "s3:GetBucketAcl",
+  #     Effect = "Allow",
+  #     Resource = "arn:aws:s3:::*"
+  #     Principal = {Service = "logs.${var.aws_region}.amazonaws.com"}
+  #   },
+  #   {
+  #     Action = "s3:PutObject",
+  #     Effect = "Allow",
+  #     Resource = "arn:aws:s3:::*"
+  #     Principal = {Service = "logs.${var.aws_region}.amazonaws.com"}
+  #   }
+  # }
+  statement {
+    actions = [
+      "s3:GetBucketAcl", "s3:PutObject"
+    ]
+
+    resources = [ 
+      "arn:aws:s3:::${aws_s3_bucket.lambda_bucket.id}/*",
+      "arn:aws:s3:::${aws_s3_bucket.lambda_bucket.id}"
+      ]
+    principals {
+      type = "Service"
+      identifiers = [ "logs.${var.aws_region}.amazonaws.com" ]
+    }
+  }
+}
+
 resource "aws_s3_bucket_acl" "lambda_bucket_acl" {
   bucket = aws_s3_bucket.lambda_bucket.id
   acl    = "private"
@@ -108,7 +163,7 @@ resource "aws_cloudwatch_log_group" "apigw" {
 module "fusionfunction" {
   source = "./fusionfunction"
   use_case = var.use_case
-  memory_sizes = [128]
+  memory_sizes = var.memory_sizes
   lambda_bucket = aws_s3_bucket.lambda_bucket
   lambda_exec = aws_iam_role.lambda_exec
   api = aws_api_gateway_rest_api.api

@@ -4,34 +4,6 @@ const AWS = require("aws-sdk")
 const crypto = require("crypto")
 
 const otherFunctions = require("setup.json")
-/*const testOtherFunctions = {
-    traceName : "Test123",
-    // callling function is A
-    rules: {
-        A :{
-            // trying to call B
-            B: {
-                // in a sync call
-                sync: {
-                    strategy: "local"
-                },
-                async: {
-                    strategy: "remote",
-                    url: "ASYNC-B-256"
-                }
-            },
-            C: {
-                sync: {
-                    strategy: "local"
-                },
-                async: {
-                    strategy: "remote",
-                    url: "ASYNC-C-256"
-                }
-            }
-        }
-    }
-}*/
 
 let basePath = ""
 let baseUrl = ""
@@ -60,24 +32,42 @@ exports.handler = async function (event) {
     currentTraceId = input['traceId']
 
     // Read by the extractor
-    console.log("TraceId", currentTraceId)
-    console.log("FirstStep", firstStepInChain)
-    console.log("ColdStart", isColdStart)
+    // console.log("TraceId", currentTraceId)
+    // console.log("FirstStep", firstStepInChain)
+    // console.log("ColdStart", isColdStart)
+    // console.log("Memory", process.env["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"])
+    logRelevantMessage("init", {
+        isRootInvocation: firstStepInChain,
+        isColdStart: isColdStart,
+        fusionGroup: otherFunctions["traceName"],
+        memoryAvail: process.env["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"]
+    })
     if(isColdStart) {
-        console.log("overhead-coldstartToEvent", eventStart - coldStartTime)
+        //console.log("overhead-coldstartToEvent", eventStart - coldStartTime)
+        logRelevantMessage("overhead-coldstartToEvent", {
+            ms: eventStart - coldStartTime
+        })
     }
     isColdStart = false
 
     // Invoke the function with await be cause execution stops when this function returns
     let timeBase = Date.now()
-    console.log("overhead-eventStartToInvokeLocal", timeBase - eventStart)
+    //console.log("overhead-eventStartToInvokeLocal", timeBase - eventStart)
+    logRelevantMessage("overhead-eventStartToInvokeLocal", {
+        ms: timeBase - eventStart
+    })
     let result = await invokeLocal(functionToHandle, input, true)
-    console.log("time-base", Date.now() - timeBase)
+    //console.log("time-base", Date.now() - timeBase)
+    logRelevantMessage("time-base", {
+        ms: Date.now() - timeBase
+    })
 
     console.log("Result", result)
 
-    console.log("overhead-event", Date.now() - eventStart)
-
+    //console.log("overhead-event", Date.now() - eventStart)
+    logRelevantMessage("overhead-event", {
+        ms: Date.now() - eventStart
+    })
     return {
         statusCode: 200,
         headers: {
@@ -94,15 +84,15 @@ exports.handler = async function (event) {
 /**
  * 
  * @param {*} event The original event to find the Base URL
- * @param {*} step  The next step to call - will be appended to base url
+ * @param {*} taskName  The next step to call - will be appended to base url
  * @param {*} data  The data to call the next function with
  */
-async function invokeRemote(step, data, sync = false) {
+async function invokeRemote(taskName, data, sync = false) {
     let timeRemote = Date.now()
-    const [baseUrl, basePath] = await getUrlsForRemoteCall(step, sync)
+    const [baseUrl, basePath] = await getUrlsForRemoteCall(taskName, sync)
     return new Promise((resolve, reject) => {
 
-        let pathPart = otherFunctions["rules"][functionToHandle][step][sync ? "sync" : "async"]["url"]
+        let pathPart = otherFunctions["rules"][functionToHandle][taskName][sync ? "sync" : "async"]["url"]
         const options = {
             host: baseUrl,
             // onlyStage/SYNC-A to call A sync
@@ -126,18 +116,39 @@ async function invokeRemote(step, data, sync = false) {
                         throw new Error("The response to a supposedly sync request was empty, which means that is was sent to an async endpoint. Please fix the optimizer. options=" + options)
                     }
                     let json = JSON.parse(resultData) // If the response was empty the request was sent to an async endpoint, which means there is an error in the optimizer
-                    console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+                    //console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+                    logRelevantMessage("call", {
+                        local: false,
+                        sync: sync,
+                        caller: functionToHandle,
+                        called: taskName,
+                        time: Date.now() - timeRemote
+                    })
                     resolve(json)
                 } else {
                     // Async Response is empty (it just has lots of headers and stuff...)
-                    console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+                    //console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+                    logRelevantMessage("call", {
+                        local: false,
+                        sync: sync,
+                        caller: functionToHandle,
+                        called: taskName,
+                        time: Date.now() - timeRemote
+                    })
                     resolve({})
                 }
             })
         })
         req.on('error', (e) => {
             console.log('Request Error', e)
-            console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+            //console.log(`time-remote-${sync}-${functionToHandle}-${step}`, Date.now() - timeRemote)
+            logRelevantMessage("time", {
+                local: false,
+                sync: sync,
+                caller: functionToHandle,
+                called: taskName,
+                time: Date.now() - timeLocal
+            })
             reject(e)
         })
         req.write(JSON.stringify(data))
@@ -145,16 +156,23 @@ async function invokeRemote(step, data, sync = false) {
     })
 }
 
-async function invokeLocal(stepName, input, sync) {
+async function invokeLocal(taskName, input, sync) {
     let timeLocal = Date.now()
-    let currentHandler = getHandler(stepName)
+    let currentHandler = getHandler(taskName)
     let res = null
     if(sync) {
         res = await currentHandler.handler(input, callFunction)
     } else {
         res = currentHandler.handler(input, callFunction)
     }
-    console.log(`time-local-${sync}-${functionToHandle}-${stepName}`, Date.now() - timeLocal)
+    //console.log(`time-local-${sync}-${functionToHandle}-${taskName}`, Date.now() - timeLocal)
+    logRelevantMessage("call", {
+        local: true,
+        sync: sync,
+        caller: functionToHandle,
+        called: taskName,
+        time: Date.now() - timeLocal
+    })
     return res
 }
 
@@ -194,7 +212,10 @@ async function getUrlsForRemoteCall(step, sync) {
             basePath = `${apiId}.execute-api.${process.env["AWS_DEFAULT_REGION"]}.amazonaws.com`
             console.log("Used self-gotten apigw urls")
         }
-        console.log("overhead-ApiCallUrls", Date.now() - startTime)
+        //console.log("overhead-ApiCallUrls", Date.now() - startTime)
+        logRelevantMessage("overhead-ApiCallUrls", {
+            ms: Date.now() - startTime
+        })
     }
     return [basePath, baseUrl]
 }
@@ -236,4 +257,20 @@ function generateTraceId() {
     let randomTracePart = crypto.randomBytes(16).toString("hex")
 
     return `${fusionSetupPart}-${functionToHandle}-${memory}-${randomTracePart}`
+}
+
+/**
+ * Unfortunately CloudWatch doesn't really sort message by their timestamp, so we must put the timestamp into every log message.
+ * While we are at it, we might as well put the trace id in every message as well, just incase CloudWatch mucks up the ordering so bad that it looks like a log message belongs to another invocation
+ */
+function logRelevantMessage(type, content) {
+    let fusionizeMagicString = "FSMSG"
+    let relevantMessage = {
+        traceId: currentTraceId,
+        time: Date.now(),
+        sourceFunction: functionToHandle,
+        type: type,
+        content: content,
+    }
+    console.log(fusionizeMagicString + JSON.stringify(relevantMessage))
 }

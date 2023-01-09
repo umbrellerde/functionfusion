@@ -85,7 +85,7 @@ exports.handler = async function (event) {
         configurationMetadata[newDate]["traceName"] = newDate
         newConfiguration = configurationMetadata
     } else {
-        console.log("Iterate on lowest Latency found something to do")
+        console.log("Iterate (on last configuration or latency?) found something to do")
     }
 
     // Strategy - Try to improve iteratively on p99 latency
@@ -123,7 +123,7 @@ exports.handler = async function (event) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { setupsTested: setupsTested, newConfiguration: newConfiguration, optimumFound: !stillTryingNewConfigurations },
+        body: { optimumFound: !stillTryingNewConfigurations }, //setupsTested: setupsTested, newConfiguration: newConfiguration,
     }
 }
 
@@ -223,12 +223,18 @@ function getConfigurationLastUsed(setupsTested) {
 /**
  * helper method for power tuning
  */
-let changeMemorySizeOfFunction = (fname, mem, configurationMetadata) => {
-    configurationMetadata[newTimestamp] = structuredClone(configurationMetadata[currentMin])
+let changeMemorySizeOfFunction = (fname, mem, configurationMetadata, newTimestamp, currentMin) => {
+    console.log(`function ${fname} should have memory ${mem}`)
+    configurationMetadata[newTimestamp] = JSON.parse(JSON.stringify(configurationMetadata[currentMin]))
     configurationMetadata[newTimestamp]["traceName"] = newTimestamp
 
-    for (let caller of Object.keys(configurationMetadata[newTimestamp])) {
-        configurationMetadata[newTimestamp]["rules"][caller][fname]["async"]["url"] = fname + "-" + mem
+    for (let caller of Object.keys(configurationMetadata[newTimestamp]["rules"])) {
+        if (configurationMetadata[newTimestamp]["rules"][caller][fname]["async"]["strategy"] === "remote") {
+            configurationMetadata[newTimestamp]["rules"][caller][fname]["async"]["url"] = fname + "-" + mem
+        }
+        if (configurationMetadata[newTimestamp]["rules"][caller][fname]["sync"]["strategy"] === "remote") {
+            configurationMetadata[newTimestamp]["rules"][caller][fname]["sync"]["url"] = "SYNC-" + fname + "-" + mem
+        }
     }
     return configurationMetadata
 }
@@ -240,7 +246,7 @@ let changeMemorySizeOfFunction = (fname, mem, configurationMetadata) => {
           "traceId": "f1940f9795747e2a",
           "fusionGroup": "A,B,C,D", // Fusion Setup, same as the name of the list this object is in
           "source": "A", // Where was the original invocatino from? In case of Root invocation, this is also the current function
-          "currentFunction": "A", // What is the base function of the currently running function?
+          "currentFunction": "A", // What is the base function of the currently running task?
           "billedDuration": 2056, // Extracted from the Lambda Report
           "memoryAvail": 128 // Extracted from Env Variable
           "maxMemoryUsed": 80, // as reported by Lambda
@@ -279,16 +285,15 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
             let caller = invocation["currentFunction"]
             // This is a list of strings (==task name)
             let syncCallsList = invocation["calls"]
+                .filter((call) => call["caller"] == caller) // ?? only get invocations that actually were called by the original task of this function. IDK whether thats a good idea
                 .filter((call) => call["sync"] == true)
                 .map((call) => call["called"])
             let asyncCallsList = invocation["calls"]
+                .filter((call) => call["caller"] == caller) // ?? only get invocations that actually were called by the original task of this function. IDK whether thats a good idea
                 .filter((call) => call["sync"] == false)
                 .map((call) => call["called"])
             // Init Object if it's null
-            if (actualCallsConfiguration[caller] == null) {
-                actualCallsConfiguration[caller] = {}
-            }
-            console.log(`sync calls: ${syncCallsList}, async calls: ${asyncCallsList}`)
+            actualCallsConfiguration[caller] = actualCallsConfiguration[caller] || {}
             // For now, just count how often it's called sync/async
             for (let e of syncCallsList) {
                 // Init Object if it's null
@@ -343,7 +348,7 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
             if (actualCalls["sync"] != null && actualCalls["sync"] > 0) {
                 if (minConfig["async"]["strategy"] === "remote") {
                     // Oh nose, we found something to change! There are async calls, but the strategy for async calls is to call locally!
-                    configurationMetadata[newTimestamp] = structuredClone(configurationMetadata[currentMin])
+                    configurationMetadata[newTimestamp] = JSON.parse(JSON.stringify(configurationMetadata[currentMin]))
                     configurationMetadata[newTimestamp]["traceName"] = newTimestamp
                     configurationMetadata[newTimestamp]["rules"][caller][called]["async"] = {
                         "strategy": "local"
@@ -359,23 +364,21 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
     console.log("remote/async is already optimal - now on to memory sizes!")
     // do some power tuning here!
 
-    // TODO filter Configurations for all optimal with different sizes
-    // Get perf/$ / speed / ... data for every teseted function size here, is in setupsTested
-
     let comparableConfigurationKeys = new Set()
     comparableConfigurationKeys.add(currentMinConfiguration["traceName"])
     let currentOptimalRules = currentMinConfiguration["rules"]
     // Compare all setups and get a list that use the same configuration as the currently fastest (but with other memory sizes)
+    // TODO this could return on every change - but the memory sizes of async functions should't influence each other (because the prev. optimizer made it all async==remote) - so just do it all at once. Might be better to test single steps later on?
     for (let possibleConfigurationKey of Object.keys(configurationMetadata)) {
         let possibleRules = configurationMetadata[possibleConfigurationKey]["rules"]
         let isComparable = true // Will be set to false in this nested loop
         for (let i = 0; i < Object.keys(possibleRules).length; i++) {
-            let setupKey = Object.keys(possibleRules)[i]
-            for (let j = 0; j < Object.keys(possibleRules[setupKey]).length; j++) {
-                let fromKey = Object.keys(possibleRules[setupKey])[j]
-                let currentFrom = Object.keys(possibleRules[setupKey][fromKey])
-                for (let k = 0; k < Object.keys(currentFrom).length; k++) {
-                    let toKey = Object.keys(currentFrom)[k]
+            let fromKey = Object.keys(possibleRules)[i]
+            for (let j = 0; j < Object.keys(possibleRules[fromKey]).length; j++) {
+                let toKey = Object.keys(possibleRules[fromKey])[j]
+                let syncAsyncList = Object.keys(possibleRules[fromKey][toKey])
+                for (let k = 0; k < syncAsyncList.length; k++) {
+                    let syncAsync = syncAsyncList[k]
                     /*
                     possibleRule looks something like this:
                     "async": {
@@ -389,9 +392,9 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
                     lets see if it's remote/local strategies align with the current optimal one
                     if yes, good. If no, break
                     */
-                    let possibleRule = currentFrom[toKey]
-                    let optimalRule = currentOptimalRules[fromKey][toKey]
-                    let sameStrategies = possibleRule["async"]["strategy"] === optimalRule["async"]["strategy"] && possibleRule["sync"]["strategy"] === optimalRule["sync"]["strategy"]
+                    let possibleRule = possibleRules[fromKey][toKey][syncAsync]
+                    let optimalRule = currentOptimalRules[fromKey][toKey][syncAsync]
+                    let sameStrategies = possibleRule["strategy"] === optimalRule["strategy"]
                     if (!sameStrategies) {
                         isComparable = false
                         j = k = Number.MAX_SAFE_INTEGER // Try it with the next possible rule = exit j and k inner loop
@@ -415,61 +418,79 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
     }
     */
     let memorySizeSpeeds = {}
+    let maxMemoryUsage = {}
     comparableConfigurationKeys.forEach(key => {
+        console.log("comparable key found", key)
         let currentConfig = configurationMetadata[key]
         let traceName = currentConfig["traceName"]
+        console.log("traceName", traceName)
         let fromThisSetup = setupsTested[traceName]
-        let currentFunction = fromThisSetup["currentFunction"]
-        let currentMemory = fromThisSetup["memoryAvail"]
-        let currentTime = fromThisSetup["internalDuration"]
+        console.log("FromThisSetup is", fromThisSetup)
+        for (let i = 0; fromThisSetup && i < fromThisSetup.length; i++) {
+            let currentFunction = fromThisSetup[i]["currentFunction"]
+            let currentMemory = fromThisSetup[i]["memoryAvail"]
+            let currentTime = fromThisSetup[i]["internalDuration"]
+            let maxMemoryUsed = fromThisSetup[i]["maxMemoryUsed"]
 
-        // insert the new datum into the data structure described above
-        memorySizeSpeeds[currentFunction] = memorySizeSpeeds[currentFunction] || {}
-        memorySizeSpeeds[currentFunction][currentMemory] = memorySizeSpeeds[currentFunction][currentMemory] || []
-        memorySizeSpeeds[currentFunction][currentMemory].push(currentTime)
+            // insert the new datum into the data structure described above
+            memorySizeSpeeds[currentFunction] = memorySizeSpeeds[currentFunction] || {}
+            memorySizeSpeeds[currentFunction][currentMemory] = memorySizeSpeeds[currentFunction][currentMemory] || []
+            memorySizeSpeeds[currentFunction][currentMemory].push(currentTime)
+
+            // This is the max of current and new value. Its longer than necessary
+            maxMemoryUsage[currentFunction] = maxMemoryUsage[currentFunction] ? Math.max(maxMemoryUsage[currentFunction], maxMemoryUsed) : maxMemoryUsed
+        }
     })
 
-    console.log("Map from Memory Size to Speed is")
+    console.log("memorySizeSpeeds")
     console.log(memorySizeSpeeds)
+    console.log("maxMemoryUsage")
+    console.log(maxMemoryUsage)
 
     const arrayAverage = array => array.reduce((a, b) => a + b) / array.length
 
-    let dollarPerMs = function (memSize) {
-        return 0.0000166667 * memSize * 0.000001 // Empirically Validated.
-    }
+    const dollarPerMs = memSize => 0.0000166667 * memSize * 0.000001 // Empirically Validated.
 
+    let memorySizesHaveChanged = false
     for (let fname of Object.keys(memorySizeSpeeds)) {
+        console.log("Currently testing function", fname)
         let averagePrice = {}
         for (let memSize of Object.keys(memorySizeSpeeds[fname])) {
             let average = arrayAverage(memorySizeSpeeds[fname][memSize])
             averagePrice[memSize] = average * dollarPerMs(parseInt(memSize))
         }
-        let smallestKey = parseInt(Object.keys(averagePrice).reduce((a, b) => obj[a] < obj[b] ? a : b))
-        console.log("Cheapest Memory Size is ", smallestKey, "for function", fname)
+        let smallestKey = parseInt(Object.keys(averagePrice).reduce((a, b) => a < b ? a : b))
+        console.log("Cheapest Memory Size is ", smallestKey, "for function", fname, ". All average prices are")
+        console.log(averagePrice)
         // Check if the next biggest or next smallest memory size was already tested.
         let currentIndex = allDeployedMemorySizes.findIndex(el => el == smallestKey)
 
-
-        if (!memorySizeSpeeds[fname].includes(allDeployedMemorySizes[currentIndex + 1])) {
+        if (allDeployedMemorySizes.length > (currentIndex + 1) && !Object.keys(memorySizeSpeeds[fname]).includes("" + allDeployedMemorySizes[currentIndex + 1])) {
             // Bigger hasnt been tested yet
             // update configurationMetadata with new Timestamp and new rules as above
             console.log("Testing the next biggest memory Size", allDeployedMemorySizes[currentIndex + 1])
-            configurationMetadata = changeMemorySizeOfFunction(fname, allDeployedMemorySizes[currentIndex + 1], configurationMetadata)
-            return configurationMetadata
-        } else if (!memorySizeSpeeds[fname].includes(allDeployedMemorySizes[currentIndex - 1])) {
-
+            configurationMetadata = changeMemorySizeOfFunction(fname, allDeployedMemorySizes[currentIndex + 1], configurationMetadata, newTimestamp, currentMin)
+            //return configurationMetadata //TODO change only a single thing == return here, if we want to do it all at once don't return
+            memorySizesHaveChanged = true
+        } else if (
+            currentIndex > 0 &&
+            !Object.keys(memorySizeSpeeds[fname]).includes("" + allDeployedMemorySizes[currentIndex - 1]) &&
+            allDeployedMemorySizes[currentIndex - 1] > maxMemoryUsage[currentFunction]) { // The new memory size should be bigger than the minimum required memory size...
             // TODO test whether memory used was smaller than smallest tested size
             // Smaller hasnt been tested yet
             console.log("Testing the next smaller memory Size", allDeployedMemorySizes[currentIndex - 1])
-            configurationMetadata = changeMemorySizeOfFunction(fname, allDeployedMemorySizes[currentIndex - 1], configurationMetadata)
-            return configurationMetadata
+            configurationMetadata = changeMemorySizeOfFunction(fname, allDeployedMemorySizes[currentIndex - 1], configurationMetadata, newTimestamp, currentMin)
+            //return configurationMetadata //TODO change only a single thing == return here, if we want to do it all at once don't return
+            memorySizesHaveChanged = true
         } else {
             // both have been tested, so change nothing here
-            console.log("Both Memory sizes have already been tested")
+            console.log("Both Memory sizes have already been tested (or this is the edge case memory size)")
         }
     }
 
-
+    if (memorySizesHaveChanged) { // Power tuning found multiple things to do
+        return configurationMetadata
+    }
 
     // Build a map of memorys-size-to-performance for every root invocation
 
@@ -486,15 +507,20 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
  * @returns a map from all existing group setup names to their invocations.
  */
 async function getAllSetups() {
-    let objects = await s3.listObjects({
-        Bucket: bucketName
+    let objects = await s3.listObjectsV2({
+        Bucket: bucketName,
+        Prefix: "traces/"
     }).promise()
+
+    console.log("All possible setups are", objects)
 
     // Get all Json File Names
     let fileNames = []
     for (let object of objects.Contents) {
-        if (object.Key.includes(".json") && object.Key.includes("traces/")) {
+        if (object.Key.includes(".json")) {
             fileNames.push(object.Key)
+        } else {
+            console.log("Ignoring Key", object)
         }
     }
 

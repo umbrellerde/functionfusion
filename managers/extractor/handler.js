@@ -1,5 +1,7 @@
+// This is the exporter using export tasks
+
 const AWS = require("aws-sdk");
-const { assert } = require("console");
+const zlib = require("zlib")
 
 AWS.config.update({ region: process.env["AWS_REGION"] })
 
@@ -10,39 +12,33 @@ const bucketName = process.env["S3_BUCKET_NAME"]
 
 const logGroupNames = process.env["LOG_GROUP_NAMES"].split(",")
 let fusionSet = new Set();
-let timeoutMs = null
+let fusionizeMagicString = "FSMSG"
 
 // TODO https://registry.terraform.io/modules/gadgetry-io/cloudwatch-logs-exporter/aws/latest
-
 exports.handler = async function (event) {
     console.log("Starting Extractor with event", event)
 
-    let alternativeTimeout = 180000
-    try {
-        timeoutMs = parseInt(event["timeout"]) || alternativeTimeout
-    } catch (error) {
-            //let startTime = Date.now() - 180_000 // TODO make smarter decisions based on what? 3minutes
-        //let startTime = Date.now() - 750_000 // 15 Minutes for the cold starts
-        //let startTime = Date.now() - 300_000 // 5min for the IoT full test
-        //let startTime = Date.now() - 3_600_000 // 30 Minutes for 300 invocations test
-        //let startTime = Date.now() - 15_840_000 // 4.5h
-        // 86_400_000 48hrs
-        timeoutMs = alternativeTimeout
+    let timeoutMs = parseInt(event["timeout"]) || 180000
+    let newerThanMs = parseInt(event["startTimeMs"]) || (Date.now() - timeoutMs - 10_000) // Just for good measure add 10 seconds
+
+    if(parseInt(event["startTimeMs"]) == 0) { // JS is a big pile of weird behaviour
+        newerThanMs= 0
     }
 
-    console.log("TimeoutMs is:", timeoutMs)
+    console.log("newerThanMs is:", newerThanMs)
+    console.log("which is as a date", new Date(newerThanMs))
+    console.log("which is from now (positive hopefully)", Date.now() - new Date(newerThanMs))
 
     let allInvocations = []
 
-    for (let i = 0; i < logGroupNames.length; i++) {
-        let invocatinos = await getInvocationsFromLogGroup(logGroupNames[i])
-        allInvocations = allInvocations.concat(invocatinos)
-    }
-    allInvocations = await Promise.all(allInvocations)
+    let exportTaskIds = await createExportTasks(newerThanMs)
 
-    //allInvocations = mergeRemoteInvocationsByTrace(allInvocations)
+    let finishedInvocations = await getAllInvocations(exportTaskIds, newerThanMs)
 
-    await saveInvocationsToS3(allInvocations)
+    console.log("finishedInvocations")
+    console.log(finishedInvocations)
+
+    await saveInvocationsToS3(finishedInvocations)
 
     fusionSet = new Set();
 
@@ -51,8 +47,432 @@ exports.handler = async function (event) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: { invocations: allInvocations.length },
+        body: { invocations: finishedInvocations.length },
     }
+}
+
+async function createExportTasks(newerThanMs) {
+    let exportTaskIds = []
+    let endTimeMs = Number.MAX_SAFE_INTEGER //Date.now()
+    console.log(`End time for export is ${endTimeMs}`)
+
+    for (let i = 0; i < logGroupNames.length; i++) {
+        let logGroupName = logGroupNames[i]
+        let startTime = newerThanMs
+
+        console.log("Creating Export Task for", logGroupName)
+
+        var exportParams = {
+            taskName: `${logGroupName}-${startTime}`,
+            logGroupName: logGroupName,
+            from: startTime,
+            to: endTimeMs,
+            destination: bucketName,
+            destinationPrefix: `exportedLogs${logGroupName}` // Log group name contains a / as fist symbol
+        }
+        for (let tries = 0; tries < 20; tries++) {
+            try {
+                let exportTaskId = await cw.createExportTask(exportParams).promise()
+                exportTaskIds.push({ "id": exportTaskId["taskId"], "logGroup": logGroupName })
+                await new Promise(r => setTimeout(r, 1000)) // Seems like sleeping makes it easier to not hit the throttling
+                break
+            } catch (e) {
+                if (tries > 1) {
+                    console.log("Error from creating export task is")
+                    console.log(e)
+                }
+                await new Promise(r => setTimeout(r, 5000 * (tries + 1)))
+            }
+        }
+    }
+    console.log("All Export Task IDs: ")
+    console.log(exportTaskIds)
+    return exportTaskIds
+}
+
+async function getAllInvocations(exportTaskIds, newerThanMs) {
+    // Simplest thing is query tasks periodically until one is finished and then extract its invocations.
+    let allInvocations = []
+    for (let i = 0; i < exportTaskIds.length; i++) {
+        let currentTask = exportTaskIds[i]
+        // Wait for the task to be complete, then get the invocations for this event
+
+
+        var describeParams = {
+            taskId: currentTask["id"]
+        }
+
+        for (let tries = 0; tries < 10; tries++) {
+            let exportStatus = await cw.describeExportTasks(describeParams).promise()
+            if (exportStatus.exportTasks[0].status.code === "COMPLETED") {
+                let events = await getEventsFromExport(currentTask["logGroup"], newerThanMs)
+                let invocations = await getInvocationsFromEvents(events)
+                console.log("Finished extracting invocations for", currentTask["logGroup"])
+                allInvocations.push(invocations)
+                break
+            }
+            await new Promise(r => setTimeout(r, 2000 * (tries + 1))); // Wait a little bit if extract failed
+        }
+
+    }
+    return allInvocations.flat()
+}
+
+/**
+ * Given the logGroup, find all the gzipped files in s3 that belong to this log group, extract them and concatenate them to the nice json we expect.
+ * Also needs to turn the text files in s3 into the json file we expect
+ * @param {string} logGroupNamePrefix 
+ * @returns {object} object with these properties:     
+ * //     events: [
+    //         {
+    //             "message": "The string that was logged (+ START REPORT etc.)",
+    //             "timestamp": 123456790, // unix timestamp
+    //         }, ...
+    //     ]
+ */
+async function getEventsFromExport(logGroupNamePrefix, newerThanMs) {
+    // List all files in the export/logGroupName Prefix
+    console.log("Getting Events From Export", logGroupNamePrefix, newerThanMs)
+    let listObjectsParam = {
+        Bucket: bucketName,
+        Prefix: `exportedLogs${logGroupNamePrefix}`
+    }
+
+    let objects = await s3.listObjectsV2(listObjectsParam).promise()
+    // console.log("listObjectsv2 answered:")
+    // console.log(objects)
+
+    while (objects["NextContinuationToken"]) {
+        console.err("!!!! There were too many files to list in one ListObjects")
+        let listObjectsParam = {
+            Bucket: bucketName,
+            Prefix: `exportedLogs${logGroupNamePrefix}`
+        }
+
+        let moreObjects = await s3.listObjectsV2(listObjectsParam).promise()
+        console.log("Got even more Objects:")
+        console.log(moreObjects)
+        objects["NextContinuationToken"] = moreObjects["NextContinuationToken"]
+        objects["Contents"] = objects["Contents"].concat(moreObjects["Contents"])
+    }
+    // Download them and extract the gz to text
+    let fileNames = []
+    let allKeysToDeleteLater = []
+    for (let i = 0; i < objects["Contents"].length; i++) {
+        let key = objects["Contents"][i]["Key"]
+        allKeysToDeleteLater.push(key)
+        let lastModifiedMs = new Date(objects["Contents"][i]["LastModified"]).getTime()
+        if (key.includes("aws-logs-write-test")) {
+            continue
+            // } // Not really necessary since only the newest export is in there anyway
+            // else if (lastModifiedMs < newerThanMs) {
+            //     console.log("Last Modified is", lastModifiedMs)
+            //     console.log("Only looking for files newer than", newerThanMs)
+            //     console.log("Modified is smaller than newerThan, so we are skipping this file")
+            //     continue
+        } else {
+            console.log("Will Download next key", key)
+            fileNames.push(key)
+        }
+    }
+    // We only need one log stream even if it is in more than one export....
+    // Not necessary since old files are moved away
+    // let logStreamSets = new Set()
+    // fileNames = fileNames.filter(elem => {
+    //     let streamName = elem.split("/").slice(-2, -1)[0]
+    //     if (logStreamSets.has(streamName)) {
+    //         return false
+    //     } else {
+    //         logStreamSets.add(streamName)
+    //         return true
+    //     }
+    // })
+    //console.log("File Names filtered Down", fileNames)
+
+    let events = []
+    for (let i = 0; i < fileNames.length; i++) {
+        let fname = fileNames[i]
+
+        // "exportedLogs/aws/lambda/fusion-function-A-128/a89f04c2-13aa-47eb-b5d0-8c12ecddf8ba/2023-01-06-[$LATEST]a4f1a07fd9184d6ca66ec17b9eb13db2/000000.gz"
+        let functionNameUglyExtraction = fileNames[i].split("/")[3].split("-")[2]
+
+        let resp = await s3.getObject({
+            Bucket: bucketName,
+            Key: fname
+        }).promise()
+
+        let textResponse = zlib.gunzipSync(resp.Body).toString("ascii")
+        //let textResponse = require('child_process').execSync('gzip -d -c', { input: resp.Body }).toString('ascii')
+        //console.log("Text Response is", textResponse)
+        //console.log(zlib.gunzipSync(content).toString('utf8'))
+        let logLinesStrings = textResponse.split("\n\n")
+        for (let i = 0; i < logLinesStrings.length - 1; i++) {
+            if (logLinesStrings[i].includes("START RequestId")
+                || logLinesStrings[i].includes("END RequestId")
+                || logLinesStrings[i].includes("REPORT RequestId")) {
+                let controlMsgSplit = logLinesStrings[i].split(" ")
+                events.push({
+                    requestId: controlMsgSplit[3].split("\t")[0],
+                    message: controlMsgSplit.slice(1).join(" "),
+                    timestamp: Date.parse(controlMsgSplit[0]),
+                    sourceFunction: functionNameUglyExtraction
+                })
+            } else {
+                // Just a normal line
+                let parts = logLinesStrings[i].split("\t")
+                // parts[3]: "The string that was logged (+ START REPORT etc.)",
+                // "timestamp": 123456790, // unix timestamp
+                if (parts[3].startsWith(fusionizeMagicString)) {
+                    events.push({
+                        requestId: parts[1], // Is this ugly? Yes. But it does work, and I dont think that cloudwatch will ever change this format.
+                        message: parts[3],
+                        timestamp: Date.parse(parts[0].split(" ")[1]),
+                        sourceFunction: functionNameUglyExtraction
+                    })
+                } // else this is just a normal logged message that we can safely ignore
+
+            }
+        }
+    }
+
+    // Delete ALL the files so that they will not come up in the next export
+    let deleteParams = {
+        Bucket: bucketName,
+        Delete: {
+            Objects: allKeysToDeleteLater.map(e => {return {Key: e}})
+        }
+    }
+    let deleted = await s3.deleteObjects(deleteParams).promise()
+    console.log("deleted")
+    console.log(deleted)
+    // No thats not good try moving them instead
+    // Move all files to another folder so that they will not be read in again for the next export
+    // let destinationFolder = "oldExportedLogs"
+    // for (let i = 0; i < allKeysToDeleteLater.length; i++) {
+    //     const currKey = allKeysToDeleteLater[i];
+    //     // await s3.copyObject({
+    //     //     Bucket: bucketName,
+    //     //     CopySource: `${bucketName}/${currKey}`,  // old file Key
+    //     //     Key: `${destinationFolder}${currKey.replace("exportedLogs", '')}`, // new file Key
+    //     // }).promise();
+
+    //     await s3.deleteObject({
+    //         Bucket: bucketName,
+    //         Key: currKey,
+    //     }).promise();
+    //     console.log(`moved ${currKey} to ${destinationFolder}`)
+    // }
+
+    return events
+}
+
+
+/**
+ * Pass this a log group, get a list of invocations back. Some of these might be doublettes
+ * @param {string} logEvents
+ */
+async function getInvocationsFromEvents(logEvents) {
+
+    if(logEvents.length == 0) {
+        return []
+    }
+
+    // TODO right here we expect the following setup:
+    // let logEventsTest = {
+    //     events: [
+    //         {
+    //             "message": "The string that was logged (+ START REPORT etc.)",
+    //             "timestamp": 123456790, // unix timestamp
+    //         }, ...
+    //     ]
+    // }
+    // These are all the messages inside a single log group. They contain FZmessages as well as StartStop messages
+    // TODO sort them by timestamp as reported by FZMSG as well, delete all lines that are not in this format
+
+    // Sort logEvents by Timestamp first
+    logEvents.sort((a,b) => a.timestamp - b.timestamp)
+
+    // Iterate over all messages and try to find the relevant TraceId for all START and REPORT messages
+    let cleanedEvents = []
+
+    // First do a pass with events to find requestId c.a.= traceId + function
+    let noControlMessages   = logEvents.filter(e => !e.message.includes("RequestId:"))
+    let onlyControlMessages = logEvents.filter(e =>  e.message.includes("RequestId:"))
+    for (let i = 0; i < noControlMessages.length; i++) {
+        let currentEvent = noControlMessages[i]
+        // For every Invocation
+        let content = JSON.parse(currentEvent["message"].replace(fusionizeMagicString, ""))
+        // e.g. {
+        //     traceId: currentTraceId,
+        //     time: Date.now(),
+        //     type: "time-asdf",
+        //     sourceFunction: "....",
+        //     content: content,
+        //     ......
+        // }
+        content.cloudWatchTimestamp = currentEvent["timestamp"]
+        content.requestId = currentEvent["requestId"]
+        cleanedEvents.push(content)
+    }
+
+    for(let i = 0; i < onlyControlMessages.length; i++){
+        let currentEvent = onlyControlMessages[i]
+        if (currentEvent["message"].includes("START RequestId: ")) {
+
+            let startMessage = {
+                traceId: cleanedEvents.find(e => e.requestId === currentEvent.requestId).traceId,
+                type: "START",
+                time: currentEvent["timestamp"],
+                cloudWatchTimestamp: currentEvent["timestamp"],
+                sourceFunction: currentEvent["sourceFunction"],
+                content: {
+                    // What is there to put here?
+                }
+            }
+            cleanedEvents.push(startMessage)
+
+        } else if (currentEvent["message"].includes("REPORT RequestId: ")) {
+            // Get the traceId that most of the last messages have. But we can also just use the last traceId?
+
+            let reportMessage = {
+                traceId: cleanedEvents.find(e => e.requestId === currentEvent.requestId).traceId,
+                type: "REPORT",
+                time: currentEvent["timestamp"],
+                sourceFunction: currentEvent["sourceFunction"],
+                content: {
+                    billedDuration: parseInt(currentEvent["message"].split("Billed Duration: ")[1].split(" ")[0]),
+                    maxMemoryUsed: parseInt(currentEvent["message"].split("Max Memory Used: ")[1].split(" ")[0])
+                }
+            }
+            cleanedEvents.push(reportMessage)
+
+            eventsSinceLastStop = 0
+        } else if (currentEvent["message"].includes("END ")) {
+            // Get the traceId that most of the last messages have. But we can also just use the last traceId?
+            let endMessage = {
+                traceId: cleanedEvents.find(e => e.requestId === currentEvent["requestId"]).traceId,
+                type: "END",
+                time: currentEvent["timestamp"],
+                sourceFunction: currentEvent["sourceFunction"],
+                content: {}
+            }
+            cleanedEvents.push(endMessage)
+
+            eventsSinceLastStop = 0
+        }
+    }
+
+    let accMap = new Map()
+    // Map of Map. traceId -> function name -> list of events in that function name
+    let traceIdMap = cleanedEvents.reduce((accMap, newEvent) => {
+        if (accMap.get(newEvent.traceId) == undefined) {
+            accMap.set(newEvent.traceId, new Map())
+        }
+        if (accMap.get(newEvent.traceId).get(newEvent.sourceFunction) == undefined) {
+            accMap.get(newEvent.traceId).set(newEvent.sourceFunction, [])
+        }
+        accMap.get(newEvent.traceId).get(newEvent.sourceFunction).push(newEvent)
+        return accMap
+    }, accMap)
+    console.log("Invocation Map")
+    console.log(traceIdMap)
+
+    // The Format that they will be saved in
+    invocationsList = []
+    traceIdMap.forEach(functionName => {
+        functionName.forEach(events => {
+        // TODO this does not work for remote invocations since multiple function calls (with their respective START STOP but the same traceId) will be in here
+            try{
+
+                let initEvent = events.find(e => e.type == "init")
+                let callEvents = events.filter(e => e.type == "call")
+                let report = events.find(e => e.type == "REPORT")
+                // This is probably happening since there are some events without a REPORT, so they must  be somewhere
+                let reports = events.filter(e => e.type == "REPORT")
+                if(reports.length > 1) {
+                    console.error("This message has more than one report!")
+                    console.error(events)
+                    throw new Error("This message has more than one report!", events)
+                }
+
+                let timeBase = events.find(e => e.type == "time-base")
+        
+                let calls = callEvents.map(e => e.content)
+        
+                let lastEventExceptReport = events.filter(e => e.type !== "REPORT").reduce((prev, current) => {
+                    return (prev.time > current.time) ? prev : current
+                })// This will be the last message with will be time-base or END
+                let initEventTimestamp = initEvent.time // This is the cloudWatch time and not the function time. So this may be off. Use InternalDuration for actual 
+        
+                let newInvocation = {
+                    traceId: initEvent.traceId,
+                    fusionGroup: initEvent.content.fusionGroup,
+                    source: initEvent.traceId.split("-")[1],
+                    currentFunction: initEvent.sourceFunction,
+                    currentTask: calls[0]["caller"],
+                    billedDuration: report.content.billedDuration,
+                    memoryAvail: initEvent.content.memoryAvail,
+                    maxMemoryUsed: report.content.maxMemoryUsed,
+                    isRootInvocation: initEvent.content.isRootInvocation,
+                    isColdStart: initEvent.content.coldStart,
+                    startTimestamp: initEventTimestamp,
+                    endTimestamp: lastEventExceptReport.time,
+                    internalDuration: timeBase.content.ms,
+                    calls: calls,
+                }
+                fusionSet.add(initEvent.content.fusionGroup)
+                invocationsList.push(newInvocation)
+            } catch (e) {
+                console.error("Was not able to read invocation, skipping it....")
+                console.error(e)
+                console.error(events)
+            }
+        })
+    })
+    return invocationsList
+}
+
+/**
+ * 
+ * @param {string} bucket The Bucket to save the file to
+ * @param {string} key The key (~=filename)
+ * @param {Object|Array} body The body that will be JSON.stringify-ed to save to s3 
+ */
+async function uploadToBucket(bucket, key, body) {
+    return s3.upload({
+        Bucket: bucket,
+        Key: key,
+        Body: JSON.stringify(body),
+    }).promise()
+}
+
+/**
+ * 
+ * @param {string} bucket Bucket to get the file from
+ * @param {string} key ~Filename of the file
+ * @returns {Object|Array} The Parsed JSON
+ */
+async function getFromBucket(bucket, key) {
+
+    // Check if the object exists
+    let head;
+    try {
+        head = await s3.headObject({
+            Bucket: bucket,
+            Key: key
+        }).promise()
+    } catch (err) {
+        return []
+    }
+
+
+    let resp = await s3.getObject({
+        Bucket: bucket,
+        Key: key
+    }).promise()
+
+    let json = JSON.parse(resp.Body.toString('utf-8'))
+    return json
 }
 
 /**
@@ -63,11 +483,9 @@ async function saveInvocationsToS3(invocations) {
 
     // Filter for only root invocations
     //invocations = invocations.filter(inv => inv["isRootInvocation"] == true)
+    console.log("Saving Invocations to s3", invocations.length, fusionSet)
 
     let fusionSetups = [...fusionSet]
-
-    console.log("Fusion Setups are: ", fusionSetups)
-    console.log("Fusion Set is: ", fusionSet)
 
     let promises = []
     // Get the old data for these fusion groups and merge it with the new data.
@@ -117,7 +535,7 @@ async function saveInvocationsToS3(invocations) {
             let currNew = newTraces[i]
             //console.log("Checking new Trace", currNew)
             let found = false
-            for (let j=0; j < existingTraces.length; j++) {
+            for (let j = 0; j < existingTraces.length; j++) {
                 try {
                     let currExisting = existingTraces[j]
                     if (currNew["traceId"] === currExisting["traceId"] && currNew["currentFunction"] === currExisting["currentFunction"] && currNew["startTimestamp"] === currExisting["startTimestamp"]) {
@@ -143,7 +561,7 @@ async function saveInvocationsToS3(invocations) {
                 } catch (error) {
                     console.log("Error during Merging, invocation is", existingTraces[j], error)
                 }
-                
+
             }
             if (!found) {
                 //console.log("Pushing new onto List:", currNew)
@@ -161,281 +579,17 @@ async function saveInvocationsToS3(invocations) {
     await Promise.all(promises)
 }
 
-/**
- * Pass this a log group, get a list of invocations back. Some of these might be doublettes
- * @param {string} logGroupName 
- */
-async function getInvocationsFromLogGroup(logGroupName) {
-
-    let startTime = Date.now() - timeoutMs
-    let endTime = Date.now()
-
-    const allLogStreamsInput = {
-        logGroupName: logGroupName,
-        limit: 50,
-        orderBy: "LastEventTime"
-    }
-
-    let allLogStreams = null
-    try {
-        allLogStreams = await cw.describeLogStreams(allLogStreamsInput).promise()
-        // If the last event was before start time delete the logs because they aren't interesting to us
-        if (allLogStreams["lastEventTimestamp"] < startTime) {
-            console.log("Ignoring the whole log group since it is too old")
-            // The last update happened before our start time, so this log group is not important anymore
-            // Since they are ordered by LastEventTime, we have found everything we need
-            allLogStreams["logStreams"] = []
-            // nextToken will also be null so there is no need to null that
-        }
-
-        while (allLogStreams["nextToken"]) {
-            console.log("Found a next Token:", allLogStreams["nextToken"])
-            allLogStreamsInput["nextToken"] = allLogStreams["nextToken"]
-            if (allLogStreams["lastEventTimestamp"] < startTime) {
-                // The last update happened before our start time, so this log group is not important anymore
-                // Since they are ordered by LastEventTime, we have found everything we need
-                break
-            }
-            let newLogStream = await cw.describeLogStreams(allLogStreamsInput).promise()
-            allLogStreams["logStreams"] = allLogStreams["logStreams"].concat(newLogStream["logStreams"])
-            allLogStreams["nextToken"] = newLogStream["nextToken"]
-        }
-    } catch (error) {
-        console.error("describeLogStreams failed with ", error)
-        throw error
-    }
-
-    console.log("AllLogStreams has found LogStreams:", allLogStreams["logStreams"].length, "for log group", logGroupName)
-
-    let invocations = []
-
-    for (let i = 0; i < allLogStreams["logStreams"].length; i++) {
-        if (i % 100 == 0) {
-            console.log("Reading Stream", i, "started", allLogStreams["logStreams"][i]["lastEventTimestamp"])
-        }
-        let stream = allLogStreams["logStreams"][i]
-
-        const params = {
-            startTime: startTime,
-            endTime: endTime,
-            logGroupName: logGroupName,
-            logStreamName: stream["logStreamName"],
-            startFromHead: true
-        }
-
-        let logEvents = null
-        let tries = 1
-        // Download the logStream with the given parameters
-        while (logEvents == null) {
-            try {
-                logEvents = await cw.getLogEvents(params).promise()
-            } catch (error) {
-                console.error("getLogEvents failed with ", error, "on try", tries)
-                if (tries > 10) {
-                    throw error
-                }
-                await new Promise(resolve => setTimeout(resolve, 5000 * tries))
-                tries++
-                continue
-            }
-        }
-        //console.log("Finished reading first events, trying nextForwardToken")
-        while(logEvents.hasOwnProperty("nextForwardToken")) {
-            //console.log("LogEvents has nextToken", logEvents["nextForwardToken"])
-            params["nextToken"] = logEvents["nextForwardToken"]
-            let newEvents = null
-            while (newEvents == null) {
-                try {
-                    newEvents = await cw.getLogEvents(params).promise()
-                } catch (error) {
-                    console.error("getLogEvents with next tokens failed with ", error, "on try", tries)
-                    if (tries > 10) {
-                        throw error
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 5000 * tries))
-                    tries++
-                    continue
-                }
-            }
-            //console.log("New Events Forward Token")
-            //console.log(newEvents["nextForwardToken"])
-            logEvents["events"] = logEvents["events"].concat(newEvents["events"])
-            //console.log("Log Events is now length:", logEvents["events"].length)
-            if (newEvents["nextForwardToken"] === logEvents["nextForwardToken"]) {
-                // Same response twice ==> Break
-                //console.log("Got same FW Token twice, breaking")
-                break
-            } else {
-                logEvents["nextForwardToken"] = newEvents["nextForwardToken"]
-            }
-            
-        }
-
-        if (i % 100 == 0) {
-            console.log("Found log Events:", logEvents["events"].length)
-        }
-        let startI = 0
-        let searchingForStart = true
-        for (let i = 0; i < logEvents["events"].length; i++) {
-            let currentEvent = logEvents["events"][i]
-            if (searchingForStart && currentEvent["message"].includes("START RequestId: ")) {
-                startI = i
-                searchingForStart = false
-                //console.log("----- Found Start Message!", currentEvent)
-            } else if ((!searchingForStart) && currentEvent["message"].includes("REPORT RequestId: ")) {
-                //console.log("----- Found Report Message!", currentEvent)
-                searchingForStart = true
-                // TODO Remote
-                let newInvocation = extractInvocation(logEvents["events"].slice(startI, i + 1))
-                if (newInvocation != null) {
-                    invocations.push(newInvocation)
-                } else {
-                   //console.log("The Invocation could not be found")
-                }
-
-            }
-        }
-    }
-    return invocations
+function mode(arr) {
+    return arr.sort((a, b) =>
+        arr.filter(v => v === a).length
+        - arr.filter(v => v === b).length
+    ).pop();
 }
 
-/**
- * All the events in a LogEvents that make up a single invocation.
- * @param {Array<Object>} invocationEvents
- */
-function extractInvocation(invocationEvents) {
-    assert(invocationEvents[0]["message"].includes("START RequestId"), "An Invocation should start with 'START RequestId'. Events:", invocationEvents)
-    assert(invocationEvents[invocationEvents.length - 1]["message"].includes("REPORT RequestId:"), "An Invocation should end with 'REPORT RequestId:'")
-    // Get the last Message that should be the report, for example
-    // 2022-02-11T15:57:02.506+01:00	REPORT RequestId: 627f1e04-9632-4d5c-8a1f-dbb13218d791 Duration: 1504.20 ms Billed Duration: 1505 ms Memory Size: 128 MB Max Memory Used: 79 MB 
-
-    try {
-        let report = invocationEvents[invocationEvents.length - 1]["message"]
-
-        // The second line (first line of the log) should contain the TraceId, for example
-        // .replace call replaces newlines with empty string
-        //console.log("Amount of Messages are", invocationEvents.length)
-        //console.log("First message (TraceId) is", invocationEvents[1]["message"])
-        //console.log("Second Message (FirstStep) is", invocationEvents[2]["message"])
-        //console.log("Last Message (REPORT) is", invocationEvents[invocationEvents.length - 1]["message"])
-        //console.log("All Log Messages Are", invocationEvents)
-        // {fusionSetupPart}-${functionToHandle}-${memory}-${randomTracePart}
-        let [fusionGroup, source, memoryAvail, traceId] = invocationEvents[1]["message"].split("TraceId ")[1].replace(/[\n\r]/g, '').split("-")
-        let isRootInvocation = (invocationEvents[2]["message"].split("FirstStep ")[1].replace(/[\n\r]/g, '') === 'true')
-        let coldStart = (invocationEvents[3]["message"].split("ColdStart ")[1].replace(/[\n\r]/g, '') === 'true')
-        let billedDuration = parseInt(report.split("Billed Duration: ")[1].split(" ")[0])
-        let maxMemoryUsed = parseInt(report.split("Max Memory Used: ")[1].split(" ")[0])
-
-        //console.log("Fusion Group is", fusionGroup)
-        fusionSet.add(fusionGroup)
-
-        let startTimestamp = parseInt(invocationEvents[1]["timestamp"])
-        // Not the report, but the END message ==> second to last message
-        let endTimestamp = parseInt(invocationEvents[invocationEvents.length - 2]["timestamp"])
-
-        let calls = []
-        let totalDuration = -1
-
-        // Ignore the START and END Messages => Start at 1 and finish at len-1
-        for (let i = 1; i < invocationEvents.length - 1; i++) {
-            let logLine = invocationEvents[i]["message"].split("INFO")[1]
-            if (logLine && logLine.includes("time-")) {
-                logLine = logLine.trim()
-
-                if (logLine.startsWith("time-base")) {
-                    totalDuration = parseInt(logLine.split(" ")[1])
-                    continue
-                }
-
-                // Its relevant for timing stuff
-                // And looks like this:
-                // time-local-true-A-A 481.638
-                //   |    |     |  | |  |
-                //   |    |     |  | |  |>Duration of call in ms
-                //   |    |     |  | |>Called Function      
-                //   |    |     |  |>Calling Function
-                //   |    |     |>Is this a sync call? (Set by invocating function)  
-                //   |    |>Local call or remote call?
-                //   |>This is the marker that the logged string is relevant
-                let [infoStr, time] = logLine.split(" ")
-                time = parseInt(time)
-                let info = infoStr.split("-")
-                let local = info[1] === "local" // Whether it is a local call => remote otherwise
-                let sync = info[2] === "true"
-                let caller = info[3]
-                let called = info[4]
-                calls.push({
-                    called: called,
-                    caller: caller,
-                    local: local,
-                    sync: sync,
-                    time: time
-                })
-            }
-        }
-
-        let newInvocation = {
-            traceId: traceId,
-            fusionGroup: fusionGroup,
-            source: source,
-            currentFunction: calls[0]["caller"],
-            billedDuration: billedDuration,
-            memoryAvail: memoryAvail,
-            maxMemoryUsed: maxMemoryUsed,
-            isRootInvocation: isRootInvocation,
-            isColdStart: coldStart,
-            startTimestamp: startTimestamp,
-            endTimestamp: endTimestamp,
-            internalDuration: totalDuration,
-            calls: calls,
-        }
-        return newInvocation
-    } catch (err) {
-        // The invocation could not be extracted - we don't really care since this almost never happens...
-        console.error(err)
-        return null
-    }
-}
-
-/**
- * 
- * @param {string} bucket The Bucket to save the file to
- * @param {string} key The key (~=filename)
- * @param {Object|Array} body The body that will be JSON.stringify-ed to save to s3 
- */
-async function uploadToBucket(bucket, key, body) {
-    return s3.upload({
-        Bucket: bucket,
-        Key: key,
-        Body: JSON.stringify(body),
-    }).promise()
-}
-
-/**
- * 
- * @param {string} bucket Bucket to get the file from
- * @param {string} key ~Filename of the file
- * @returns {Object|Array} The Parsed JSON
- */
-async function getFromBucket(bucket, key) {
-
-    // Check if the object exists
-    let head;
-    try {
-        head = await s3.headObject({
-            Bucket: bucket,
-            Key: key
-        }).promise()
-    } catch (err) {
-        return []
-    }
-
-
-    let resp = await s3.getObject({
-        Bucket: bucket,
-        Key: key
-    }).promise()
-
-    let json = JSON.parse(resp.Body.toString('utf-8'))
-    return json
+module.exports = {
+    handler: exports.handler,
+    createExportTasks: createExportTasks,
+    getEventsFromExport: getEventsFromExport,
+    getInvocationsFromEvents: getInvocationsFromEvents,
+    getAllInvocations:getAllInvocations
 }

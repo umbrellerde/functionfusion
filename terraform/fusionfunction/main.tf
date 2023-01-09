@@ -48,6 +48,7 @@ locals {
       } }
     }
   }
+  # TODO change default fusion setup here
   default_fusion_setup = local.fusion_setup_all_local
 }
 
