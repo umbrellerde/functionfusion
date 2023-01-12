@@ -53,6 +53,12 @@ neuer use case evaluation - befaas async citen (mehrere rufen einen auf, )
 
 ✔ optideployer
 
+__Evaluation__
+
+- bursty workload
+- some task that only gets called later on
+- random flow vs. (...)
+
 __Extended Providerseitig__
 
 Daten automatisch auch richtig transportieren.
