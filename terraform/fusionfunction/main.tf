@@ -48,8 +48,25 @@ locals {
       } }
     }
   }
+
+  fusion_setup_all_remote = {
+    "traceName" = time_static.create_time.unix,
+    "rules" = {
+      // Create entry from all keys to all keys.
+      for i, v in local.function_names : v => { for i, v in local.function_names : v => {
+        "sync" = {
+          "strategy" = "remote",
+          "url" = "SYNC-${v}"
+        }
+        "async" = {
+          "strategy" = "remote",
+          "url" = "${v}"
+        }
+      } }
+    }
+  }
   # TODO change default fusion setup here
-  default_fusion_setup = local.fusion_setup_all_local
+  default_fusion_setup = local.fusion_setup_all_remote
 }
 
 resource "time_static" "create_time" {}

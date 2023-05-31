@@ -51,7 +51,7 @@ async function updateFunction(fname, mainZipFile, setups, apigwUrls) {
 
     // get the current Setup and save it as setup.json in the zip
     // Find the most recent timestamp
-    let lastTimestamp = Math.max(...Object.keys(setups).map(val => parseInt(val)))
+    let lastTimestamp = Object.keys(setups).sort().slice(-1)[0]
     let setupToUse = setups[lastTimestamp]
     console.log("New Setup to Use: ", lastTimestamp)
     mainZip.file("setup.json", JSON.stringify(setupToUse))
@@ -67,12 +67,24 @@ async function updateFunction(fname, mainZipFile, setups, apigwUrls) {
     }).promise();
     console.log("Uploaded File is", uploaded);
     // Update the function code
-    let newCode = await Lambda.updateFunctionCode({
-        FunctionName: fname,
-        S3Bucket: s3Bucket,
-        S3Key: newKey,
-        Publish: true
-    }).promise();
+
+    let newCode = {}
+    for(let tries = 1; tries <= 11; tries++) {
+        try {
+            newCode = await Lambda.updateFunctionCode({
+                FunctionName: fname,
+                S3Bucket: s3Bucket,
+                S3Key: newKey,
+                Publish: true
+            }).promise();
+            break
+        } catch (error) {
+            if(tries == 11) {
+                console.error("Was not able to update Function Code in a reasonable amount of time", error)
+            }
+            await new Promise(resolve => setTimeout(resolve, tries * 2000))
+        }
+    }
 
     console.log("Updated Function", newCode);
     return newCode
@@ -92,10 +104,10 @@ async function getLocalTasksOfFunction(fname, setups) {
     console.log("Getting Function Configuration for function", fname);
     let thisTaskName = fname.split("-")[2]
     // TODO this is not a good solution
-    let lastTimestamp = Math.max(...Object.keys(setups).map(val => parseInt(val)))
+    let lastTimestamp = Object.keys(setups).sort().slice(-1)[0]
     console.log("Getting keys from object", lastTimestamp, "rules", thisTaskName)
     console.log("Object:", setups)
-    console.log("Keys:", Object.keys(setups).map(val => parseInt(val)))
+    console.log("Keys:", Object.keys(setups))
     let functionSettings = setups[lastTimestamp]["rules"][thisTaskName]
     // We only need the tasks that are actually executed locally to be in the ZIP
     // Get a list of local tasks (sync.strategy == local or async.strategy == local)

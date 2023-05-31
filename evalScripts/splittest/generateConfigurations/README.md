@@ -1,0 +1,1 @@
+Maybe use these tests to show that the optimal memory size does not scale linearly with price for cpu-intensive workloads??

@@ -4,10 +4,10 @@ exports.handler = async function (event, callFunction) {
     console.log("currency", event)
 
     const rate = getRate(event.from.currencyCode, event.toCode)
-    const [convUnits, convNanos] = applyRate(from.units, from.nanos, rate)
+    const [convUnits, convNanos] = applyRate(event.from.units, event.from.nanos, rate)
   
     // carry over fractions from units
-    return { units: convUnits, nanos: convNanos, currencyCode: toCode }
+    return { units: convUnits, nanos: convNanos, currencyCode: event.toCode }
 }
 
 // Below here is directly from Befaas - its awesome

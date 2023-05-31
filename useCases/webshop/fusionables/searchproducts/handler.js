@@ -6,5 +6,5 @@ exports.handler = async function (event, callFunction) {
     let products = await callFunction("listproducts", {}, true)
     let query = event.query
 
-    return products.filter(p => p.name.includes(query) || p.description.includes(query))
+    return products.products.filter(p => p.name.includes(query) || p.description.includes(query))
 }

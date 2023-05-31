@@ -9,17 +9,34 @@ exports.handler = async function (event, callFunction) {
 
     let operation = event.operation.toLowerCase()
 
-    if (operation == "empty") { // TODO since there is now a range key...? 
-        let resp = await ddb.deleteItem({
-            Key: {
-                "userId": {
-                    S: event.userId
-                }
+    if (operation == "empty") { // TODO since there is now a range key...?
+        let current = await ddb.query({
+            TableName: "WebshopCartTable",
+            KeyConditionExpression: "#sd = :sid",
+            ExpressionAttributeNames: {
+                "#sd": "userId"
             },
-            TableName: "WebshopCartTable"
+            ExpressionAttributeValues: {
+                ":sid": { S: '' + event.userId }
+            }
         }).promise()
-        console.log("delete returned", resp)
-        return resp
+        current = current.Items.map(item => item.itemId.S)
+        await Promise.all(current.map(async item => {
+            let resp = await ddb.deleteItem({
+                Key: {
+                    "userId": {
+                        S: event.userId
+                    },
+                    "itemId": {
+                        S: item
+                    }
+                },
+                TableName: "WebshopCartTable"
+            }).promise()
+            return {}
+        }));
+
+        return {}
     } else if (operation == "get") {
         let resp = await ddb.query({
             TableName: "WebshopCartTable",
@@ -31,28 +48,49 @@ exports.handler = async function (event, callFunction) {
                 ":sid": { S: '' + event.userId }
             }
         }).promise()
-        console.log("get returned", resp)
         // Expected Response
         // {
         //     "userId": "USER12",
         //     "items": [{
-        //       "productId": "QWERTY",
+        //       "productId": "",
         //       "quantity": 7
         //     }]
         //   }
         return resp.Items
     } else if (operation == "add") {
-        let [itemId, quantity] = [event.itemId || 0, event.quantity || 0]
+        let [productId, quantity] = [event.productId || "2", event.quantity || 2]
         let resp = await ddb.putItem({
             TableName: "WebshopCartTable",
             Item: {
                 'userId': { S: event.userId.toString() },
-                'itemId': { S: itemId.toString() },
-                'quantity': { N: quantity }
+                'itemId': { S: productId.toString() },
+                'quantity': { N: quantity.toString() }
             }
         }).promise()
-        console.log("add returned", resp)
+        eratosthenes(500_000)
         return resp.Items
 
     }
+}
+
+function eratosthenes(limit) {
+    var primes = [];
+    if (limit >= 2) {
+        var sqrtlmt = Math.sqrt(limit) - 2;
+        var nums = new Array(); // start with an empty Array...
+        for (var i = 2; i <= limit; i++) // and
+            nums.push(i); // only initialize the Array once...
+        for (var i = 0; i <= sqrtlmt; i++) {
+            var p = nums[i]
+            if (p)
+                for (var j = p * p - 2; j < nums.length; j += p)
+                    nums[j] = 0;
+        }
+        for (var i = 0; i < nums.length; i++) {
+            var p = nums[i];
+            if (p)
+                primes.push(p);
+        }
+    }
+    return primes;
 }

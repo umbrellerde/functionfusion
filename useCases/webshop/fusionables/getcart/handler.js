@@ -6,6 +6,11 @@ exports.handler = async function (event, callFunction) {
         operation: "get",
         userId: event.userId,
     }, true)
-    console.log("cart is", cart)
+    cart = cart.map(item => {
+        return {
+        itemId: item.itemId.S,
+        userId: item.userId.S,
+        quantity: parseInt(item.quantity.N)
+    }})
     return cart
 }

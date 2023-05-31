@@ -9,6 +9,11 @@ output "function_log_group_names" {
   value = join(",",[for function_name in module.fusionfunction.function_names : "/aws/lambda/${function_name}"])
 }
 
+output "function_names_for_coldstarts" {
+    description = "CSV of all function names that coldstarts needs to run on"
+  value = join(",",[for function_name in module.fusionfunction.function_names : function_name])
+} 
+
 output "function_name" {
   // for_each = fileset("${path.module}/../fusionables", "**/handler.json")
   description = "Lambda functions"

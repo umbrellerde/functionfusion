@@ -2,14 +2,22 @@
 
 This is inspired by the BeFaaS Webshop Example (which is adopted from the google webshop example but applied to faas), but with some more async interaction to better test the features of Fusionize.
 
+## Possible Loads
+
+- Get all Products, choose a random one, or listrecommendations
+- Add someting to cart, directly or via frontend
+- Empty Cart
+- get Frontend
+- checkout
+
+For a couple of random user IDs
+
 ## addcartitem (implemented)
 ```
 Payload: {
     "userId": "USER12",
-    "item": {
-        "productId": "QWERTY",
-        "quantity": 2
-    }
+    "productId": "QWERTY",
+    "quantity": 2
 }
 ```
 
@@ -124,11 +132,10 @@ Returns two random ads (redirect_url, image_url, text) without input
 Example Payload: {
   "userId": "USER12"
 }
-Example Response: {
-  "userId": "USER12",
-  "items": [{
+Example Response: [{
     "productId": "QWERTY",
-    "quantity": 7
+    "quantity": 7,
+    "userId": "1"
   }]
 }
 ```
@@ -257,7 +264,7 @@ Response: {
 
 calculate a shipping cost based on quantity of items
 
-## shiporder (implemented)
+## shiporder (implemented, primes)
 ```
 Ex Payload Body: {
  "address":{

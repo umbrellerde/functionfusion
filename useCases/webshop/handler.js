@@ -73,11 +73,7 @@ exports.handler = async function (event) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            result: result,
-            from: functionToHandle,
-            root: firstStepInChain
-        }),
+        body: JSON.stringify(result),
     }
 }
 

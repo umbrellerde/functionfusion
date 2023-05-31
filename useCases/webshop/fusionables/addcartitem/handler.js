@@ -10,7 +10,7 @@ exports.handler = async function (event, callFunction) {
             productId: event["productId"],
             quantity: event["quantity"]
         }
-    }, true)
+    }, false)
 
     console.log("addcartitem got response", addedItemRes)
 

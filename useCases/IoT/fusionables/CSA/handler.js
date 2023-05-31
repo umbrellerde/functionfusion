@@ -29,9 +29,16 @@ exports.handler = async function(event, callFunction) {
         }
     }
 
+    let result = null
+    try {
+        result = await ddb.putItem(params).promise()
+    } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 100)) // Sleep 100ms if this doesnt work
+    }
+
     return {
         from: "CheckSoundAccident",
-        useCaseTable: await ddb.putItem(params).promise()
+        useCaseTable: result
     }
 }
 

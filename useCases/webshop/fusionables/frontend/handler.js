@@ -11,7 +11,8 @@ exports.handler = async function (event, callFunction) {
         case "get":
             let supportedCurrencies = await callFunction("supportedcurrencies", {}, true)
             let productsList = await callFunction("listproducts", {}, true)
-            productsList = await Promise.all(productsList.map(async pr => {
+            console.log("productsList", productsList)
+            productsListCurrency = await Promise.all(productsList.products.map(async pr => {
                 let newPrice = await callFunction("currency", {
                     from: pr.priceUsd,
                     toCode: currencyPref
@@ -19,42 +20,40 @@ exports.handler = async function (event, callFunction) {
                 pr.price = newPrice
                 return pr
             }))
-            console.log("All Products list")
-            console.log(productsList)
             let ads = await callFunction("getads", {}, true)
-            let recommendations = await callFunction("listrecommendations", {productIds: productsList.map(p => p.id)})
+            let get_cart = await callFunction("getcart", {userId: userId}, true)
+            let recommendations = await callFunction("listrecommendations", {productIds: get_cart.map(p => p.id)}, true)
 
             return {
                 ads: ads,
-                products: productsList,
                 supportedCurrencies: supportedCurrencies,
-                recommendations: recommendations
+                recommendations: recommendations,
+                cart: get_cart,
+                productsList: productsListCurrency
             }
         case "cart":
-            let cart = await callFunction("getcard", {userId: userId}, true)
-            let shippingCost = await callFunction("shipmentquote", {userId: userId, items: cart.items}, true) // Item array with a price
-            // TODO get shipment costs and total order costs
+            let cart = await callFunction("getcart", {userId: userId}, true)
+            let shippingCost = await callFunction("shipmentquote", {userId: userId, items: cart}, true) // Item array with a price
             return {
                 cart: cart,
                 shippingCost: shippingCost
             }
         case "checkout":
-            return await callFunction("checkout", {userId: userId, creditCard: {creditCardNumber: event.creditCardNumber}}, true)
+            return await callFunction("checkout", {userId: userId, creditCard: {creditCardNumber: event.creditCardNumber}}, false)
         case "addcart":
             let newItem = await callFunction("addcartitem", {
                 userId: userId,
                 productId: event.productId || "0",
                 quantity: event.quantity || 1
-            }, true)
-            let newCart = await callFunction("getcard", {userId: userId}, true)
+            }, false)
+            let newCart = await callFunction("getcart", {userId: userId}, true)
             return {
                 newItem: newItem,
                 cart: newCart
             }
         case "emptycart":
-            let resp = await callFunction("emptycart", {userId: userId}, true)
+            await callFunction("emptycart", {userId: userId}, false)
             return {
-                resp: resp,
                 userId: userId
             }
         default:

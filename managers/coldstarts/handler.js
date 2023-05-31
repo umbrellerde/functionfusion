@@ -33,7 +33,7 @@ exports.handler = async function (event) {
             }
         }
     }
-    console.log("Done!", results)
+    //console.log("Done!", results)
 
     return {
         statusCode: 200,
@@ -49,7 +49,7 @@ async function createColdStarts() {
     let results = []
     // fname=fusion-function-A ==> Function to handle is part after last "-"
     let date = new Date()
-    console.log("Updating Functions for Cold Starts...")
+    //console.log("Updating Functions for Cold Starts...")
     for (let fname of functionLogGroupNames) {
 
         // Read Env of Functions
@@ -57,7 +57,7 @@ async function createColdStarts() {
             FunctionName: fname
         }).promise()
 
-        console.log("Existing is", existing)
+        //console.log("Existing is", existing)
 
         let existingVars = existing["Configuration"]["Environment"]["Variables"]
 
