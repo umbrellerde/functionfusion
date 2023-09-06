@@ -31,12 +31,13 @@ cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
 terraform destroy -auto-approve # TODO reinsert this here
 sleep 12
-terraform apply -auto-approve -var use_case="${use_case}" ## TODO only go up to the wrong s3 bucket here to speed some things up?
+terraform apply -auto-approve -var use_case="${use_case}"  -var memory_sizes="[128, 768, 1024, 2048]"
 # # The s3 bucket is not correctly created on the first try....
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 768, 1024, 2048]"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 function_names="$(terraform output -raw function_names_for_coldstarts)"
+log_group_names="$(terraform output -raw function_log_group_names)"
 
 echo "Base URL is $base_url"
 # Other Variable Setup

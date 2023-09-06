@@ -10,7 +10,7 @@ const { Worker } = require("worker_threads")
 let js_string = `
 const { workerData, parentPort } = require('worker_threads');
 
-let num = workerData.num || 8.8
+let num = workerData.num || 7
 let res = cpu_intensive(num)
 
 parentPort.postMessage(res)
@@ -33,6 +33,7 @@ exports.handler = async function (event, callFunction) {
     
     let w1 = new Promise((resolve, reject) => {
         const worker = new Worker(js_string, {
+            workerData: {},
             eval: true
         })
         worker.on("message", m => resolve(m))
@@ -40,6 +41,7 @@ exports.handler = async function (event, callFunction) {
     })
     let w2 = new Promise((resolve, reject) => {
         const worker = new Worker(js_string, {
+            workerData: {},
             eval: true
         })
         worker.on("message", m => resolve(m))

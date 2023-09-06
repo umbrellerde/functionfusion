@@ -11,7 +11,7 @@ number_coldstarts=60 # Times three because we send a request to multiple functio
 # Terraform Use Case
 use_case="useCases/webshop"
 # Test name to identify different attempts
-test_name="four"
+test_name="oldDistJun"
 # Configuration File
 # This is the finished configuration file - everything else will be handled by this script.
 configm_file="configuration/$test_name/configurationMetadata.json"
@@ -28,14 +28,15 @@ echo "json found numer of configs: $num_configs"
 
 cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
-terraform destroy -auto-approve # TODO reinsert this here
-sleep 12
-terraform apply -auto-approve -var use_case="${use_case}"
+#terraform destroy -auto-approve # TODO reinsert this here
+#sleep 12
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 1536]"
 # # The s3 bucket is not correctly created on the first try....
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 1536]"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 function_names="$(terraform output -raw function_names_for_coldstarts)"
+log_group_names="$(terraform output -raw function_log_group_names)"
 
 echo "Base URL is $base_url"
 # Other Variable Setup

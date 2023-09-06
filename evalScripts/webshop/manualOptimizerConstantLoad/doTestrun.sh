@@ -9,7 +9,7 @@ read -p "Is awsume correctly set up? [Press any key to continue]"
 # Terraform Use Case
 use_case="useCases/webshop"
 # Test name to identify different attempts
-test_name="bursty_workload"
+test_name="bursty_workload_oldDistJun"
 # Configuration File
 # This is the finished configuration file - everything else will be handled by this script.
 configm_file="configuration/$test_name/configurationMetadata.json"
@@ -28,12 +28,13 @@ echo "json found numer of configs: $num_configs"
 cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
 terraform destroy -auto-approve
-# sleep 12
-terraform apply -auto-approve -var use_case="${use_case}"
+sleep 12
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 1536]"
 # # The s3 bucket is not correctly created on the first try....
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 1536]"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
+log_group_names="$(terraform output -raw function_log_group_names)"
 
 echo "Base URL is $base_url"
 # Other Variable Setup
@@ -57,14 +58,14 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     # Upload Configuration Metadata and Run Optideployer
     aws s3 cp "tmp_config.json" "s3://$s3_bucket/metadata/configurationMetadata.json"
     rm tmp_config.json
-    sleep 5 # S3 consistency sleep
+    sleep 30 # S3 consistency sleep
     aws lambda invoke --function-name optideployer --payload '{"test": "event"}' /dev/null
     sleep 20 # There are always some old functions called when the new fusion setup should be called...
 
     start_time="$(calc $(date +"%s")*1000)"
     start_time="$(calc $start_time-240000)"
     echo "start time is $start_time"
-    k6 run -e BASE_URL="$base_url" "k6/$test_name/1.js"
+    k6 run -e BASE_URL="$base_url" "k6/bursty/1.js"
     end_time="$(calc $(date +"%s")*1000)"
     echo "end time is $end_time"
     sleep 5 # s3 consistency wait
@@ -79,4 +80,3 @@ extract "1"
 echo "Getting Results!"
 mkdir -p $results_folder
 aws s3 cp "s3://$s3_bucket/traces" "$results_folder" --recursive --exclude "*.zip"
-#aws s3 cp "s3://$s3_bucket/metadata" "$results_folder/configuration" --recursive --exclude "*.zip"

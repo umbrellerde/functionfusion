@@ -1,0 +1,4092 @@
+{
+    "a_remote": {
+        "rules": {
+            "AS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSL": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CT": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CW": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "DJ": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "I": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "SE": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            }
+        },
+        "traceName": "a_remote"
+    },
+    "b_local": {
+        "rules": {
+            "AS": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CA": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CS": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSA": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSL": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CT": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CW": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "DJ": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "I": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "SE": {
+                "AS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-SE"
+                    }
+                }
+            }
+        },
+        "traceName": "b_local"
+    },
+    "c_optimal_small": {
+        "rules": {
+            "AS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSL": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CT": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CW": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "DJ": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "I": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                }
+            },
+            "SE": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            }
+        },
+        "traceName": "c_optimal_small"
+    },
+    "c_optimal": {
+        "rules": {
+            "AS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CS": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSA": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CSL": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CT": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "CW": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "DJ": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            },
+            "I": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "local"
+                    }
+                }
+            },
+            "SE": {
+                "AS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "AS-1650"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-AS-1650"
+                    }
+                },
+                "CA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CA-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CA-128"
+                    }
+                },
+                "CS": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CS-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CS-128"
+                    }
+                },
+                "CSA": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSA"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSA"
+                    }
+                },
+                "CSL": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CSL"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CSL"
+                    }
+                },
+                "CT": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CT-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CT-128"
+                    }
+                },
+                "CW": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "CW"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-CW"
+                    }
+                },
+                "DJ": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "DJ"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-DJ"
+                    }
+                },
+                "I": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "I-128"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-I-128"
+                    }
+                },
+                "SE": {
+                    "async": {
+                        "strategy": "remote",
+                        "url": "SE"
+                    },
+                    "sync": {
+                        "strategy": "remote",
+                        "url": "SYNC-SE"
+                    }
+                }
+            }
+        },
+        "traceName": "c_optimal"
+    }
+}

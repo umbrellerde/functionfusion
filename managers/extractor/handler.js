@@ -198,10 +198,22 @@ async function getEventsFromExport(logGroupNamePrefix, newerThanMs) {
         //console.log("Downloading file", fname)
         let functionNameUglyExtraction = fileNames[i].split("/")[3].split("-")[2]
 
-        let resp = await s3.getObject({
-            Bucket: bucketName,
-            Key: fname
-        }).promise()
+        let resp;
+        
+        try {
+            resp = await s3.getObject({
+                Bucket: bucketName,
+                Key: fname
+            }).promise()
+        } catch (e) {
+            console.error("Error during getObject: (sleeping 5s and trying again...)")
+            console.error(e);
+            await new Promise(r => setTimeout(r, 5000));
+            resp = await s3.getObject({
+                Bucket: bucketName,
+                Key: fname
+            }).promise()
+        }
 
         let textResponse = zlib.gunzipSync(resp.Body).toString("ascii")
         //let textResponse = require('child_process').execSync('gzip -d -c', { input: resp.Body }).toString('ascii')
@@ -244,14 +256,56 @@ async function getEventsFromExport(logGroupNamePrefix, newerThanMs) {
     }
 
     // Delete ALL the files so that they will not come up in the next export
-    let deleteParams = {
-        Bucket: bucketName,
-        Delete: {
-            Objects: allKeysToDeleteLater.map(e => { return { Key: e } })
+
+    if(allKeysToDeleteLater.length < 100) {
+        let deleteParams = {
+            Bucket: bucketName,
+            Delete: {
+                Objects: allKeysToDeleteLater.map(e => { return { Key: e } })
+            }
+        }
+        console.log("Deleting less than 100 Objects... ")
+        for(let i = 0; i < 5; i++) {
+            try {
+                let deleted = await s3.deleteObjects(deleteParams).promise()
+                break
+            } catch(e) {
+                console.error("Error deleting Object.. retrying")
+                console.error(deleteParams)
+                console.error(e)
+                await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+            }
+        }
+    } else {
+        // Do something complicated to split the list up into smaller chunks??
+
+        console.log("Deleting more than 100 Objects... ")
+
+        const chunkSize = 100;
+        for (let i = 0; i < allKeysToDeleteLater.length; i += chunkSize) {
+            const currentKeysToDeleteLater = allKeysToDeleteLater.slice(i, i + chunkSize);
+            let deleteParams = {
+                Bucket: bucketName,
+                Delete: {
+                    Objects: currentKeysToDeleteLater.map(e => { return { Key: e } })
+                }
+            }
+            for(let i = 0; i < 5; i++) {
+                try {
+                    let deleted = await s3.deleteObjects(deleteParams).promise()
+                    break
+                } catch(e) {
+                    console.error("Error deleting Object.. retrying")
+                    console.error(deleteParams)
+                    console.error(deleteParams.Delete.Objects[0])
+                    console.error(e)
+                    await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+                }
+            }
         }
     }
-    console.log("Deleting Objects... ")
-    let deleted = await s3.deleteObjects(deleteParams).promise()
+
+    
     // No thats not good try moving them instead
     // Move all files to another folder so that they will not be read in again for the next export
     // let destinationFolder = "oldExportedLogs"
@@ -429,7 +483,10 @@ async function getInvocationsFromEvents(logEvents) {
                 })// This will be the last message with will be time-base or END
 
                 if (initEvent == undefined || report == undefined || callEvents == undefined) {
-                    console.log("Some events were not found. Ignoring this invocation")
+                    console.log("Some events were not found. Ignoring this invocation. init,report,calls.length is:")
+                    console.log(initEvent)
+                    console.log(report)
+                    console.log(callEvents.length)
                     return
                 }
 

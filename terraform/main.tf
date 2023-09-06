@@ -87,6 +87,16 @@ data "aws_iam_policy_document" "allow_access_from_cloudwatch" {
 resource "aws_s3_bucket_acl" "lambda_bucket_acl" {
   bucket = aws_s3_bucket.lambda_bucket.id
   acl    = "private"
+  depends_on = [ aws_s3_bucket_ownership_controls.s3_bucket_acl_ownership ]
+}
+
+# https://stackoverflow.com/questions/76049290/error-accesscontrollistnotsupported-when-trying-to-create-a-bucket-acl-in-aws
+# Resource to avoid error "AccessControlListNotSupported: The bucket does not allow ACLs"
+resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
 }
 
 resource "aws_iam_role" "lambda_exec" {

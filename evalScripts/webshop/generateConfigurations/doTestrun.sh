@@ -23,11 +23,11 @@ entry_task="m"
 
 cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
-#terraform destroy -auto-approve # TODO re-insert Terraform here!!!
+terraform destroy -auto-approve # TODO re-insert Terraform here!!!
 #sleep 12
-#terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}"
 # The s3 bucket is not correctly created on the first try....
-#terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 log_group_names="$(terraform output -raw function_log_group_names)"

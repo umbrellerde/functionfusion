@@ -7,7 +7,7 @@ read -p "Is awsume correctly set up? [Press any key to continue]"
 
 ##### Variables
 # How many iterations?
-default_iterations=14 # 5 for sync==local, +8 for memSizes, +1 for final optimum == 14. Its actually 12
+default_iterations=13 # 5 for sync==local, +8 for memSizes, +1 for final optimum == 14. Its actually 12
 # How long per iteration? In seconds
 duration=100 # 100
 # Terraform Use Case
@@ -15,7 +15,7 @@ use_case="useCases/IoT"
 # Requests per Second
 req_s=10 # 10*100 == 1000
 # Test name to identify different attempts
-test_name="dualcore"
+test_name="dualcore_newNewDist"
 # Note: remember to change the k6 script to call the right entry task...
 entry_task="I"
 ##### Variables
@@ -25,9 +25,9 @@ cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
 terraform destroy -auto-approve
 sleep 12
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 768, 1024, 1536, 1650, 2048]"
 # The s3 bucket is not correctly created on the first try....
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128, 768, 1024, 1536, 1650, 2048]"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
 log_group_names="$(terraform output -raw function_log_group_names)"
@@ -72,12 +72,12 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     else
         extract "$start_time"
     fi
-    sleep 5 # s3 consistency wait
+    sleep 10 # s3 consistency wait
     aws lambda invoke --function-name optimizer --payload '{"test": "event"}' /dev/null
-    sleep 5 # s3 consistency wait
+    sleep 10 # s3 consistency wait
     printf "\nDone\n"
     if [[ iteration -gt default_iterations-2 ]]; then
-        echo "Please check if the Optimizer is finally finished. And check if Input Function memory sizes need to be adjusted in k6"
+        echo "Please check if the Optimizer is finally finished"
         read -p "This is the last run according to the optimizer. Please set a new value for default_iterations if you want to continue anyway (Must be at least one bigger than current iteration to continue). Current Iteration = $iteration, Default Iterations = $default_iterations:" default_iterations
     fi
 done

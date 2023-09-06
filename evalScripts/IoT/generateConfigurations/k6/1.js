@@ -19,7 +19,7 @@ const hostprefix = `${__ENV.BASE_URL}`
 const httppost = (task, body) => http.post(`${hostprefix}/SYNC-${task}`, JSON.stringify(body), {headers: { 'Content-Type': 'application/json' }})
 
 export default function (data) {
-    const resCo = httppost("I-128", {
+    const resCo = httppost("I-128", { // 128 768 1024 1536 1650
         operation: "test",
     })
     check(resCo, { 'I status was 200': (r) => r.status == 200 });

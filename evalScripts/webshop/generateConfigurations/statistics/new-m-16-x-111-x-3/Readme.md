@@ -1,3 +1,0 @@
-This is the test with multiple memory sizes, unfortunately I miscounted the amount of path optimizations, so that the infra optimization took longer than necessary.
-
-AAAND the checkout is not running correctly so lets just throw all these values away....

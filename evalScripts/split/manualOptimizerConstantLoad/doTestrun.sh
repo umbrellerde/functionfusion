@@ -9,7 +9,7 @@ read -p "Is awsume correctly set up? [Press any key to continue]"
 # Terraform Use Case
 use_case="useCases/split"
 # Test name to identify different attempts
-test_name="bursty_workload"
+test_name="bursty_workload-newDistQ"
 # Configuration File
 # This is the finished configuration file - everything else will be handled by this script.
 configm_file="configuration/$test_name/configurationMetadata.json"
@@ -29,11 +29,12 @@ cd "$TERRAFORM_DIR"
 # Replace the S3 Bucket and all the Logs.
 terraform destroy -auto-approve
 sleep 12
-terraform apply -auto-approve -var use_case="${use_case}"
-# # The s3 bucket is not correctly created on the first try....
-terraform apply -auto-approve -var use_case="${use_case}"
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128,1024,1536]"
+# # The s3 bucket is not correctly created on the first try
+terraform apply -auto-approve -var use_case="${use_case}" -var memory_sizes="[128,1024,1536]"
 base_url="$(terraform output -raw base_url)"
 s3_bucket="$(terraform output -raw lambda_bucket_name)"
+log_group_names="$(terraform output -raw function_log_group_names)"
 
 echo "Base URL is $base_url"
 # Other Variable Setup
@@ -60,7 +61,7 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     sleep 5 # S3 consistency sleep
     aws lambda invoke --function-name optideployer --payload '{"test": "event"}' /dev/null
     sleep 20 # There are always some old functions called when the new fusion setup should be called...
-    read -p "Please update memory size of k6 if necessary [press any key to continue]"
+    # read -p "Please update memory size of k6 if necessary [press any key to continue]" # Not necessary here
 
     start_time="$(calc $(date +"%s")*1000)"
     start_time="$(calc $start_time-240000)"

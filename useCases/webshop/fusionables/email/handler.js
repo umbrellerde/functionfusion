@@ -6,7 +6,7 @@ const { Worker } = require("worker_threads")
 let js_string = `
 const { workerData, parentPort } = require('worker_threads');
 
-let num = workerData.num || 8.8
+let num = workerData.num || 7
 let res = cpu_intensive(num)
 
 parentPort.postMessage(res)
