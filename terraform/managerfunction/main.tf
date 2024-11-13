@@ -18,7 +18,7 @@ resource "aws_lambda_function" "manager_function" {
   s3_bucket = var.lambda_bucket.id
   s3_key    = aws_s3_object.object.key
 
-  runtime = "nodejs14.x"
+  runtime = "nodejs16.x"
   handler = "handler.handler"
 
   source_code_hash = data.archive_file.zip.output_base64sha256

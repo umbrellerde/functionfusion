@@ -332,8 +332,9 @@ function iterateOnLowestLatency(setupsTested, nullIfAlreadyTested = false, confi
     let newTimestamp = Math.floor(Date.now() / 1000)
     // Compare currentMinConfiguration and actualCallsConfiguration to find possible improvements
     // Iterate over actualCalls and see whether the configuration is "optimal" (==local sync & remote async)
-    for (let caller of Object.keys(actualCallsConfiguration)) {
-        for (let called of Object.keys(actualCallsConfiguration[caller])) {
+    // Sort alphabetically for better optimization performance
+    for (let caller of Object.keys(actualCallsConfiguration).sort()) {
+        for (let called of Object.keys(actualCallsConfiguration[caller]).sort()) {
 
             if(caller === called) {
                 // We don't need to optimize "calls to self", there is always a single call to self

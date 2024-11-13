@@ -59,3 +59,13 @@ output "base_url" {
 
   value = aws_api_gateway_stage.stage.invoke_url
 }
+
+#output "default_fusion_setup" {
+#  description = "The default fusion setup that should be in a file but isn't"
+#  value = module.fusionfunction.default_fusion_setup
+#}
+
+output "debug_file" {
+  description = "The file that contains the default fusion setup"
+  value = module.fusionfunction.debug_file
+}

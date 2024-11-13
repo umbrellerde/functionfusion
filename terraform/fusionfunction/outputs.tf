@@ -50,3 +50,7 @@ output "debug_names" {
 output "debug_keys" {
     value = local.default_function_keys
 }
+
+output "debug_file" {
+    value = local_file.lambda_default_fusion_setup_json.content
+}

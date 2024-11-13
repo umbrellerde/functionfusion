@@ -11,19 +11,24 @@ If you use this software in a publication, please cite it as:
 
 ### Text
 
-T. Schirmer, J. Scheuner, T. Pfandzelter, D. Bermbach, **Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion**
+Trever Schirmer, Joel Scheuner, Tobias Pfandzelter, David Bermbach. Fusionize++: Improving Serverless Application Performance Using Dynamic Task Inlining and Infrastructure Optimization. IEEE Transactions on Cloud Computing 2024
 
 ### BibTeX
 
 ```bibtex
-@article{schirmer_fusionize:2022,
-    title = "Fusionize: Improving Serverless Application Performance through Feedback-Driven Function Fusion",
-    author = "Schirmer, Trever and Scheuner, Joel and Pfandzelter, Tobias and Bermbach, David",
-    year = 2022,
+@article{schirmer2024fusionizepp,
+  author={Schirmer, Trever and Scheuner, Joel and Pfandzelter, Tobias and Bermbach, David},
+  journal={IEEE Transactions on Cloud Computing}, 
+  title={FUSIONIZE++: Improving Serverless Application Performance Using Dynamic Task Inlining and Infrastructure Optimization}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-16},
+  keywords={Task analysis;Costs;Cloud computing;Monitoring;Runtime;Optimization;Load modeling;serverless computing;FaaS;function fusion;cloud orchestration},
+  doi={10.1109/TCC.2024.3451108}
 }
 ```
 
-Please note that the manuscript is still pending publication.
 For a full list of publications, please see [our website](https://www.tu.berlin/en/mcc/research/publications/).
 
 ### License

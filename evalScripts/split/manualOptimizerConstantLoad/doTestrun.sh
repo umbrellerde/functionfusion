@@ -15,7 +15,7 @@ test_name="bursty_workload-newDistQ"
 configm_file="configuration/$test_name/configurationMetadata.json"
 # Note: remember to change optimization function in optimizer
 # Folder Name Prefix for Results
-folder_prefix="$test_name"
+folder_prefix="$test_name-waaaylater"
 ##### Variables
 
 # Setup automatic extraction of configurations from provided configuration file
@@ -59,7 +59,7 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
     aws s3 cp "tmp_config.json" "s3://$s3_bucket/metadata/configurationMetadata.json"
     rm tmp_config.json
     sleep 5 # S3 consistency sleep
-    aws lambda invoke --function-name optideployer --payload '{"test": "event"}' /dev/null
+    aws lambda invoke --function-name optideployer --payload '{"test": "event"}' --cli-binary-format raw-in-base64-out /dev/null
     sleep 20 # There are always some old functions called when the new fusion setup should be called...
     # read -p "Please update memory size of k6 if necessary [press any key to continue]" # Not necessary here
 

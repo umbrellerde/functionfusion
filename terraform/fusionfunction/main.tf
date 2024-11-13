@@ -122,7 +122,7 @@ resource "aws_lambda_function" "fusion_function" {
   s3_bucket = var.lambda_bucket.id
   s3_key    = aws_s3_object.lambda_fusion_manager.key
 
-  runtime = "nodejs14.x"
+  runtime = "nodejs16.x"
   handler = "handler.handler"
 
   source_code_hash = data.archive_file.source_code_archive.output_base64sha256

@@ -9,13 +9,13 @@ read -p "Is awsume correctly set up? [Press any key to continue]"
 # How many iterations?
 default_iterations=13 # 3 calls must be set to local (A-B, B-D, D-E), then two more to test nondefault configurations, then one where all the best options are used
 # How long per iteration? In seconds
-duration=100 # 100
+duration=100
 # Terraform Use Case
 use_case="useCases/split"
 # Requests per Second
 req_s=10 # 10*100 == 1000
 # Test name to identify different attempts
-test_name="dualcore"
+test_name="waylater-correctOptimizer"
 # Note: remember to change the k6 script to call the right entry task...
 entry_task="A"
 ##### Variables
@@ -36,7 +36,7 @@ echo "Base URL is $base_url"
 # Other Variable Setup
 calc(){ awk "BEGIN { print "$*" }"; }
 extract(){
-    #aws lambda invoke --function-name extractor --payload '{"startTimeMs": "'$1'"}' /dev/null
+    #aws lambda invoke --function-name extractor --payload '{"startTimeMs": "'$1'"}' --cli-binary-format raw-in-base64-out /dev/null
     node "$LOCAL_EXT_PATH" "$s3_bucket" "$log_group_names" "$1"
 }
 
@@ -48,7 +48,7 @@ results_folder="$SCRIPT_DIR/statistics/$folder_prefix-$entry_task-$default_itera
 cd "$SCRIPT_DIR"
 for ((iteration=0; iteration<default_iterations; iteration++)) do
     echo "Run $iteration"
-    aws lambda invoke --function-name optideployer --payload '{"test": "event"}' /dev/null
+    aws lambda invoke --function-name optideployer --payload '{"test": "event"}' --cli-binary-format raw-in-base64-out /dev/null
     sleep 10
 
     # if [[ "$iteration" -gt 2 ]]; then
@@ -73,7 +73,7 @@ for ((iteration=0; iteration<default_iterations; iteration++)) do
         extract "$start_time"
     fi
     sleep 5 # s3 consistency wait
-    aws lambda invoke --function-name optimizer --payload '{"test": "event"}' /dev/null
+    aws lambda invoke --function-name optimizer --payload '{"test": "event"}' --cli-binary-format raw-in-base64-out  /dev/null
     sleep 5 # s3 consistency wait
     printf "\nDone\n"
     # if [[ iteration -gt default_iterations-2 ]]; then
