@@ -4,9 +4,49 @@
 const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
+
+const { Worker } = require("worker_threads")
+
+let js_string = `
+const { workerData, parentPort } = require('worker_threads');
+
+let num = workerData.num || 7
+let res = cpu_intensive(num)
+
+parentPort.postMessage(res)
+
+// https://gist.github.com/sqren/5083d73f184acae0c5b7
+function cpu_intensive(baseNumber) {
+	let result = 0;	
+	for (var i = Math.pow(baseNumber, 7); i >= 0; i--) {		
+		result += Math.atan(i) * Math.tan(i);
+	};
+    return result;
+}
+`
+
 exports.handler = async function (event, callFunction) {
     console.log('ActionSignage: Event: ', event);
     // {message: "Its below freezing!", location: event["sensorID"], chain: 1, duration: 10}
+
+    let num = event.num || 7
+    
+    let w1 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
+    let w2 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
 
 
     let promises = []
@@ -27,9 +67,18 @@ exports.handler = async function (event, callFunction) {
             }
         }
 
-        let response = ddb.putItem(params).promise()
-        promises.push(response)
+        try {
+            let response = ddb.putItem(params).promise()
+            promises.push(response)
+        } catch (error) {
+            console.log("DynamoDB had some problems")
+            console.log(error)
+            await new Promise(resolve => setTimeout(resolve, 100)) // Sleep 100ms if this doesnt work
+        }
+
     }
+    let r1 = await w1
+    let r2 = await w2
     let answers = await Promise.all(promises) 
     return {
         from: "ActionSignage",

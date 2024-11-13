@@ -1,0 +1,511 @@
+{
+    "b_local": {
+        "rules": {
+            "A": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "B": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "C": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "D": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "E": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "F": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            },
+            "G": {
+                "A": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "A"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-A"
+                    }
+                },
+                "B": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "B"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-B"
+                    }
+                },
+                "C": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "C"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-C"
+                    }
+                },
+                "D": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "D"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-D"
+                    }
+                },
+                "E": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "E"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-E"
+                    }
+                },
+                "F": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "F"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-F"
+                    }
+                },
+                "G": {
+                    "async": {
+                        "strategy": "local",
+                        "url": "G"
+                    },
+                    "sync": {
+                        "strategy": "local",
+                        "url": "SYNC-G"
+                    }
+                }
+            }
+        },
+        "traceName": "b_local"
+    }
+}

@@ -4,11 +4,48 @@
 const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
+const { Worker } = require("worker_threads")
+
+let js_string = `
+const { workerData, parentPort } = require('worker_threads');
+
+let num = workerData.num || 7
+let res = cpu_intensive(num)
+
+parentPort.postMessage(res)
+
+// https://gist.github.com/sqren/5083d73f184acae0c5b7
+function cpu_intensive(baseNumber) {
+	let result = 0;	
+	for (var i = Math.pow(baseNumber, 7); i >= 0; i--) {		
+		result += Math.atan(i) * Math.tan(i);
+	};
+    return result;
+}
+`
+
+
 exports.handler = async function(event, callFunction) {
     console.log('DetectJam: Event: ', event);
 
-    let res = eratosthenes(500_000).length
-    console.log("Found", res.length, "primes. Storing Jam Info in DynamoDB")
+    let num = event.num || 7
+    
+    let w1 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
+    let w2 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
 
     let params = {
         TableName: "UseCaseTable",
@@ -18,30 +55,11 @@ exports.handler = async function(event, callFunction) {
         }
     }
 
+    let r0 = await ddb.putItem(params).promise()
+    let r1 = await w1
+    let r2 = await w2
     return {
         from: "DetectJam",
-        useCaseTable: await ddb.putItem(params).promise()
+        useCaseTable: r0
     }
-}
-
-function eratosthenes(limit) {
-    var primes = [];
-    if (limit >= 2) {
-        var sqrtlmt = Math.sqrt(limit) - 2;
-        var nums = new Array(); // start with an empty Array...
-        for (var i = 2; i <= limit; i++) // and
-            nums.push(i); // only initialize the Array once...
-        for (var i = 0; i <= sqrtlmt; i++) {
-            var p = nums[i]
-            if (p)
-                for (var j = p * p - 2; j < nums.length; j += p)
-                    nums[j] = 0;
-        }
-        for (var i = 0; i < nums.length; i++) {
-            var p = nums[i];
-            if (p)
-                primes.push(p);
-        }
-    }
-    return primes;
 }

@@ -9,7 +9,7 @@ exports.handler = async function (event, callFunction) {
 
     checked.push(await callFunction("E", { test: "event" }, true))
 
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     console.log("Checked are", checked)
     return {
@@ -19,24 +19,13 @@ exports.handler = async function (event, callFunction) {
     }
 }
 
-function eratosthenes(limit) {
-    var primes = [];
-    if (limit >= 2) {
-        var sqrtlmt = Math.sqrt(limit) - 2;
-        var nums = new Array(); // start with an empty Array...
-        for (var i = 2; i <= limit; i++) // and
-            nums.push(i); // only initialize the Array once...
-        for (var i = 0; i <= sqrtlmt; i++) {
-            var p = nums[i]
-            if (p)
-                for (var j = p * p - 2; j < nums.length; j += p)
-                    nums[j] = 0;
-        }
-        for (var i = 0; i < nums.length; i++) {
-            var p = nums[i];
-            if (p)
-                primes.push(p);
-        }
-    }
-    return primes;
+// https://gist.github.com/sqren/5083d73f184acae0c5b7
+function cpu_intensive(baseNumber) {
+	console.time('cpu_intensive');
+	let result = 0;	
+	for (var i = Math.pow(baseNumber, 7); i >= 0; i--) {		
+		result += Math.atan(i) * Math.tan(i);
+	};
+	console.timeEnd('cpu_intensive');
+    return result;
 }

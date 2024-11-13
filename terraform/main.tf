@@ -2,8 +2,8 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.74"
-
+      //version = "~> 3.74"
+      version = "~> 4.20"
     }
     random = {
       source  = "hashicorp/random"
@@ -12,77 +12,91 @@ terraform {
   }
 }
 
-locals {
-  function_names = toset([for file in fileset("${path.module}/../${var.use_case}/fusionables/**", "handler.js") : basename(dirname(file))])
-}
-
 provider "aws" {
   profile = "default"
   region  = var.aws_region
 }
 
 // Random to create a random bucket name
-
 resource "random_pet" "lambda_bucket_name" {
   prefix = var.bucket_name
   length = 4
 }
 
 // Bucket with Lambda Source Code in it
-
 resource "aws_s3_bucket" "lambda_bucket" {
   bucket        = random_pet.lambda_bucket_name.id
-  acl           = "private"
   force_destroy = true
 }
 
-data "archive_file" "lambda_fusion_manager" {
-  type = "zip"
-
-  source_dir  = "${path.module}/../${var.use_case}"
-  output_path = "${path.module}/../function.zip"
-}
-
-resource "aws_s3_bucket_object" "lambda_fusion_manager" {
+resource "aws_s3_bucket_policy" "lambda_bucket_policy" {
   bucket = aws_s3_bucket.lambda_bucket.id
-  key    = "function.zip"
-  source = data.archive_file.lambda_fusion_manager.output_path
-  etag   = filemd5(data.archive_file.lambda_fusion_manager.output_path)
+  policy = data.aws_iam_policy_document.allow_access_from_cloudwatch.json
+  # policy = jsonencode({ 
+  #   "Version": "2012-10-17",
+  #   "Statement": [
+  #     {
+  #         "Action": "s3:GetBucketAcl",
+  #         "Effect": "Allow",
+  #         "Resource": "*"
+  #         "Principal": { "Service": "logs.${var.aws_region}.amazonaws.com" }
+  #     }
+  #     ,
+  #     {
+  #         "Action": "s3:PutObject" ,
+  #         "Effect": "Allow",
+  #         "Resource": "*",
+  #         "Principal": { "Service": "logs.${var.aws_region}.amazonaws.com" }
+  #     }
+  #   ]
+  # })
 }
 
-// Lambda Function
+data "aws_iam_policy_document" "allow_access_from_cloudwatch" {
+  # Version = "2012-10-17"
+  # Statement = {
+  #   {
+  #     Action = "s3:GetBucketAcl",
+  #     Effect = "Allow",
+  #     Resource = "arn:aws:s3:::*"
+  #     Principal = {Service = "logs.${var.aws_region}.amazonaws.com"}
+  #   },
+  #   {
+  #     Action = "s3:PutObject",
+  #     Effect = "Allow",
+  #     Resource = "arn:aws:s3:::*"
+  #     Principal = {Service = "logs.${var.aws_region}.amazonaws.com"}
+  #   }
+  # }
+  statement {
+    actions = [
+      "s3:GetBucketAcl", "s3:PutObject"
+    ]
 
-resource "aws_lambda_function" "hello_world" {
-  for_each      = local.function_names
-  function_name = "fusion-function-${each.value}"
-
-  s3_bucket = aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_bucket_object.lambda_fusion_manager.key
-
-  runtime = "nodejs14.x"
-  handler = "handler.handler"
-
-  source_code_hash = data.archive_file.lambda_fusion_manager.output_base64sha256
-
-  role = aws_iam_role.lambda_exec.arn
-
-  timeout = 60
-
-  environment {
-    variables = {
-      S3_BUCKET_NAME = aws_s3_bucket.lambda_bucket.id
-      FUNCTION_TO_HANDLE = each.value
-      // THIS IS IMPORTANT: What should the initial fusion groups look like?
-      FUSION_GROUPS = join(",", local.function_names)
+    resources = [ 
+      "arn:aws:s3:::${aws_s3_bucket.lambda_bucket.id}/*",
+      "arn:aws:s3:::${aws_s3_bucket.lambda_bucket.id}"
+      ]
+    principals {
+      type = "Service"
+      identifiers = [ "logs.${var.aws_region}.amazonaws.com" ]
     }
   }
 }
 
-resource "aws_cloudwatch_log_group" "hello_world" {
-  for_each = local.function_names
-  name     = "/aws/lambda/${aws_lambda_function.hello_world[each.value].function_name}"
+resource "aws_s3_bucket_acl" "lambda_bucket_acl" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  acl    = "private"
+  depends_on = [ aws_s3_bucket_ownership_controls.s3_bucket_acl_ownership ]
+}
 
-  retention_in_days = 1
+# https://stackoverflow.com/questions/76049290/error-accesscontrollistnotsupported-when-trying-to-create-a-bucket-acl-in-aws
+# Resource to avoid error "AccessControlListNotSupported: The bucket does not allow ACLs"
+resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
+  bucket = aws_s3_bucket.lambda_bucket.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
 }
 
 resource "aws_iam_role" "lambda_exec" {
@@ -121,36 +135,17 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-// API Gateway v1 for async invocations
-
-// TODO require Author-Header for all Apigateway calls
+// API v1 Gateway
 resource "aws_api_gateway_rest_api" "api" {
   name = "lambda-api"
-}
-
-resource "aws_api_gateway_resource" "sync_root_resource" {
-  for_each    = local.function_names
-  path_part   = "SYNC-${each.value}"
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  rest_api_id = aws_api_gateway_rest_api.api.id
-}
-
-resource "aws_api_gateway_resource" "async_root_resource" {
-  for_each    = local.function_names
-  path_part   = each.value
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  rest_api_id = aws_api_gateway_rest_api.api.id
-}
-
-resource "aws_api_gateway_request_validator" "validator" {
-  name        = "function-validator"
-  rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
-  depends_on = [module.async_post_endpoint, aws_api_gateway_integration.sync_lambda, aws_api_gateway_integration.sync_lambda_root, aws_api_gateway_method.sync_proxy, aws_api_gateway_method.sync_proxy_root]
+  depends_on = [
+    module.fusionfunction, module.optideployer, module.coldstarts, module.optimizer
+  ]
 
   triggers = {
     redeployment = sha1(jsonencode(aws_api_gateway_rest_api.api.body))
@@ -173,66 +168,13 @@ resource "aws_cloudwatch_log_group" "apigw" {
   retention_in_days = 1
 }
 
-resource "aws_lambda_permission" "lambda_permission" {
-  for_each      = local.function_names
-  statement_id  = "AllowLambdaInvokeFromApigateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello_world[each.value].function_name
-  principal     = "apigateway.amazonaws.com"
+// Function Module
 
-  # The /*/*/* part allows invocation from any stage, method and resource path
-  # within API Gateway REST API.
-  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
-}
-
-module "async_post_endpoint" {
-  source                          = "github.com/vladcar/terraform-aws-serverless-common-api-gateway-method.git"
-  for_each                        = local.function_names
-  http_method                     = "POST"
-  integration_type                = "AWS"
-  integration_http_method         = "POST"
-  async_response_status_code      = "202"
-  resource_path                   = aws_api_gateway_resource.async_root_resource[each.value].path_part
-  resource_id                     = aws_api_gateway_resource.async_root_resource[each.value].id
-  rest_api_id                     = aws_api_gateway_rest_api.api.id
-  validator_id                    = aws_api_gateway_request_validator.validator.id
-  lambda_invoke_arn               = aws_lambda_function.hello_world[each.value].invoke_arn
-  enable_async_lambda_integration = true
-}
-
-// Add the sync lambda manually since the module apparently only supports async invocation.
-resource "aws_api_gateway_method" "sync_proxy" {
-  for_each      = local.function_names
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.sync_root_resource[each.value].id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "sync_lambda" {
-  for_each    = local.function_names
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_method.sync_proxy[each.value].resource_id
-  http_method = aws_api_gateway_method.sync_proxy[each.value].http_method
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello_world[each.value].invoke_arn
-}
-
-resource "aws_api_gateway_method" "sync_proxy_root" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_rest_api.api.root_resource_id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "sync_lambda_root" {
-  for_each                = local.function_names
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_method.sync_proxy_root.resource_id
-  http_method             = aws_api_gateway_method.sync_proxy_root.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello_world[each.value].invoke_arn
+module "fusionfunction" {
+  source = "./fusionfunction"
+  use_case = var.use_case
+  memory_sizes = var.memory_sizes
+  lambda_bucket = aws_s3_bucket.lambda_bucket
+  lambda_exec = aws_iam_role.lambda_exec
+  api = aws_api_gateway_rest_api.api
 }

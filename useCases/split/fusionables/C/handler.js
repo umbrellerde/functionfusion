@@ -3,42 +3,70 @@
 const AWS = require("aws-sdk")
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
+const { Worker } = require("worker_threads")
+
+let js_string = `
+const { workerData, parentPort } = require('worker_threads');
+
+let num = workerData.num || 7
+let res = cpu_intensive(num)
+
+parentPort.postMessage(res)
+
+function cpu_intensive(baseNumber) {
+	let result = 0;	
+	for (var i = Math.pow(baseNumber, 7); i >= 0; i--) {		
+		result += Math.atan(i) * Math.tan(i);
+	};
+    return result;
+}
+`
+
 exports.handler = async function (event, callFunction) {
     console.log("Event for C:", event)
     let calls = []
-    let checked = []
 
     calls.push(callFunction("F", { test: "event" }, false))
     calls.push(callFunction("G", { test: "event" }, false))
-    checked.push(eratosthenes(500_000).length)
+    
+
+    let num = event.num || 7
+    
+    let w1 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
+    let w2 = new Promise((resolve, reject) => {
+        const worker = new Worker(js_string, {
+            workerData: {},
+            eval: true
+        })
+        worker.on("message", m => resolve(m))
+        worker.on("error", m => reject(m))
+    })
+    let r1 = await w1
+    let r2 = await w2
+
     let results = await Promise.all(calls)
 
     console.log("Results are", results)
-    console.log("Checked are", checked)
     return {
         results: results,
-        checked: checked
+        w: [r1, r2]
     }
 }
 
-function eratosthenes(limit) {
-    var primes = [];
-    if (limit >= 2) {
-        var sqrtlmt = Math.sqrt(limit) - 2;
-        var nums = new Array(); // start with an empty Array...
-        for (var i = 2; i <= limit; i++) // and
-            nums.push(i); // only initialize the Array once...
-        for (var i = 0; i <= sqrtlmt; i++) {
-            var p = nums[i]
-            if (p)
-                for (var j = p * p - 2; j < nums.length; j += p)
-                    nums[j] = 0;
-        }
-        for (var i = 0; i < nums.length; i++) {
-            var p = nums[i];
-            if (p)
-                primes.push(p);
-        }
-    }
-    return primes;
+// https://gist.github.com/sqren/5083d73f184acae0c5b7
+function cpu_intensive(baseNumber) {
+	console.time('cpu_intensive');
+	let result = 0;	
+	for (var i = Math.pow(baseNumber, 7); i >= 0; i--) {		
+		result += Math.atan(i) * Math.tan(i);
+	};
+	console.timeEnd('cpu_intensive');
+    return result;
 }

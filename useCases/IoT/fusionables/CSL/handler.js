@@ -21,7 +21,12 @@ exports.handler = async function(event, callFunction) {
         }
     }
     console.log("Querying with Params (1)", params)
-    let nextTemp = await ddb.query(params).promise()
+    let nextTemp = null
+    try {
+        nextTemp = await ddb.query(params).promise()
+    } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 100)) // Sleep 100ms if this doesnt work
+    }
 
     params = {
         TableName: "UseCaseTable",

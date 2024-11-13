@@ -1,0 +1,2 @@
+# Ignore file automatically created by terraform (local_file provisioner in fusionfunction/main.tf)
+setup.json
