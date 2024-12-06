@@ -21,10 +21,10 @@ Trever Schirmer, Joel Scheuner, Tobias Pfandzelter, David Bermbach. Fusionize++:
   journal={IEEE Transactions on Cloud Computing}, 
   title={FUSIONIZE++: Improving Serverless Application Performance Using Dynamic Task Inlining and Infrastructure Optimization}, 
   year={2024},
-  volume={},
-  number={},
-  pages={1-16},
-  keywords={Task analysis;Costs;Cloud computing;Monitoring;Runtime;Optimization;Load modeling;serverless computing;FaaS;function fusion;cloud orchestration},
+  volume={12},
+  number={4},
+  pages={1172-1185},
+  keywords={Task analysis;Costs;Cloud computing;Monitoring;Runtime;Optimization;Load modeling;Cloud orchestration;FaaS;function fusion;serverless computing},
   doi={10.1109/TCC.2024.3451108}
 }
 ```
